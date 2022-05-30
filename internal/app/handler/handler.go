@@ -1,13 +1,14 @@
 package handler
 
 import (
+	"fmt"
 	"github.com/apolsh/yapr-url-shortener/internal/app/service"
 	"io"
 	"net/http"
 	"strconv"
 )
 
-func NewHandler() *http.ServeMux {
+func NewHandler(adress string) *http.ServeMux {
 	shortenerService := service.NewUrlShortenerService()
 	mux := http.NewServeMux()
 
@@ -23,7 +24,7 @@ func NewHandler() *http.ServeMux {
 					urlId := shortenerService.AddNewUrl(string(body))
 					w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 					w.WriteHeader(201)
-					_, err := w.Write([]byte(strconv.Itoa(urlId)))
+					_, err := w.Write([]byte(fmt.Sprintf("%s/%d", adress, urlId)))
 					if err != nil {
 						http.Error(w, "Error while generating response", http.StatusInternalServerError)
 					}
