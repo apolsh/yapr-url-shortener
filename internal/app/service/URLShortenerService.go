@@ -14,6 +14,6 @@ func (r URLShortenerService) AddNewURL(url string) int {
 	return r.repository.Save(url)
 }
 
-func (r URLShortenerService) GetUrlByID(id int) string {
+func (r URLShortenerService) GetURLByID(id int) string {
 	return r.repository.GetByID(id)
 }

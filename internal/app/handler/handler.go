@@ -38,7 +38,7 @@ func NewHandler(adress string) *http.ServeMux {
 			if err != nil {
 				http.Error(w, "Invalid parameter", http.StatusBadRequest)
 			} else {
-				url := shortenerService.GetUrlByID(id)
+				url := shortenerService.GetURLByID(id)
 				if len(url) > 0 {
 					http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 				} else {
