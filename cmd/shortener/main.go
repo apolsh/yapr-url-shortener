@@ -7,9 +7,9 @@ import (
 )
 
 func main() {
-	const baseUrl = "localhost:8080"
+	const baseURL = "localhost:8080"
 
-	mux := handler.NewHandler(baseUrl)
-	s := &http.Server{Addr: baseUrl, Handler: mux}
+	mux := handler.NewHandler(baseURL)
+	s := &http.Server{Addr: baseURL, Handler: mux}
 	log.Fatal(s.ListenAndServe())
 }

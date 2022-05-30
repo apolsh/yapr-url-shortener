@@ -9,7 +9,7 @@ import (
 )
 
 func NewHandler(adress string) *http.ServeMux {
-	shortenerService := service.NewUrlShortenerService()
+	shortenerService := service.NewURLShortenerService()
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -21,10 +21,10 @@ func NewHandler(adress string) *http.ServeMux {
 				if err != nil {
 					http.Error(w, "Error while body reading", http.StatusInternalServerError)
 				} else {
-					urlId := shortenerService.AddNewUrl(string(body))
+					urlID := shortenerService.AddNewURL(string(body))
 					w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 					w.WriteHeader(201)
-					_, err := w.Write([]byte(fmt.Sprintf("%s/%d", adress, urlId)))
+					_, err := w.Write([]byte(fmt.Sprintf("http://%s/%d", adress, urlID)))
 					if err != nil {
 						http.Error(w, "Error while generating response", http.StatusInternalServerError)
 					}
@@ -33,12 +33,12 @@ func NewHandler(adress string) *http.ServeMux {
 			}
 			http.Error(w, "Invalid Content-Type", http.StatusBadRequest)
 		case "GET":
-			stringId := r.URL.Path[1:]
-			id, err := strconv.Atoi(stringId)
+			stringID := r.URL.Path[1:]
+			id, err := strconv.Atoi(stringID)
 			if err != nil {
 				http.Error(w, "Invalid parameter", http.StatusBadRequest)
 			} else {
-				url := shortenerService.GetUrlById(id)
+				url := shortenerService.GetUrlByID(id)
 				if len(url) > 0 {
 					http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 				} else {
