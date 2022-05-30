@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 func NewHandler(adress string) *http.ServeMux {
@@ -16,7 +17,7 @@ func NewHandler(adress string) *http.ServeMux {
 		switch r.Method {
 		case "POST":
 			ct := r.Header.Get("Content-Type")
-			if ct == "text/html; charset=UTF-8" || ct == "text/plain" {
+			if strings.Contains(ct, "text/html") || strings.Contains(ct, "text/plain") {
 				body, err := io.ReadAll(r.Body)
 				if err != nil {
 					http.Error(w, "Error while body reading", http.StatusInternalServerError)
