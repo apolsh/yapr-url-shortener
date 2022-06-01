@@ -54,19 +54,19 @@ func TestIntegration(t *testing.T) {
 	defer server.Close()
 
 	t.Run("Adding and extracting multiple URL's", func(t *testing.T) {
-		response, body := executeTestRequest(t, server, http.MethodPost, "", testURL1, contentTypeHeader)
+		response, stringBody := executeTestRequest(t, server, http.MethodPost, "", testURL1, contentTypeHeader)
 		assert.Equal(t, 201, response.StatusCode)
-		assert.Equal(t, fmt.Sprintf("http://%s/0", addr), body)
+		assert.Equal(t, fmt.Sprintf("http://%s/0", addr), stringBody)
 
-		response, body = executeTestRequest(t, server, http.MethodPost, "", testURL2, contentTypeHeader)
+		response, stringBody = executeTestRequest(t, server, http.MethodPost, "", testURL2, contentTypeHeader)
 		assert.Equal(t, 201, response.StatusCode)
-		assert.Equal(t, fmt.Sprintf("http://%s/1", addr), body)
+		assert.Equal(t, fmt.Sprintf("http://%s/1", addr), stringBody)
 
-		response, body = executeTestRequest(t, server, http.MethodGet, "/0", "", emptyHeaders)
+		response, stringBody = executeTestRequest(t, server, http.MethodGet, "/0", "", emptyHeaders)
 		assert.Equal(t, 200, response.StatusCode)
 		assert.Equal(t, testURL1, response.Request.URL.String())
 
-		response, body = executeTestRequest(t, server, http.MethodGet, "/1", "", emptyHeaders)
+		response, stringBody = executeTestRequest(t, server, http.MethodGet, "/1", "", emptyHeaders)
 		assert.Equal(t, 200, response.StatusCode)
 		assert.Equal(t, testURL2, response.Request.URL.String())
 	})
