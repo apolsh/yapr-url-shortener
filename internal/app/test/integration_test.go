@@ -41,7 +41,8 @@ func executeTestRequest(t *testing.T, server *httptest.Server, method, path, req
 	body, err := io.ReadAll(response.Body)
 	require.NoError(t, err)
 
-	defer response.Body.Close()
+	err = response.Body.Close()
+	require.NoError(t, err)
 
 	return response, string(body)
 }
