@@ -15,7 +15,6 @@ const contentTypeTextPlain = "text/plain; charset=utf-8"
 const contentTypeTextHTML = "text/html; charset=utf-8"
 
 var testURL1 = "https://riptutorial.com/go/example/2570/http-hello-world-with-custom-server-and-mux"
-var testURL2 = "https://bitfieldconsulting.com/golang/map-declaring-initializing"
 var contentTypeHeader = map[string]string{
 	"Content-Type": "text/plain",
 }
