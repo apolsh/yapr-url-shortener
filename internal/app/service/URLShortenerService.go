@@ -6,8 +6,8 @@ type URLShortenerService struct {
 	repository repository.URLRepository
 }
 
-func NewURLShortenerService() *URLShortenerService {
-	return &URLShortenerService{repository: repository.NewURLRepositoryInMemoryImpl()}
+func NewURLShortenerService(repo repository.URLRepository) *URLShortenerService {
+	return &URLShortenerService{repository: repo}
 }
 
 func (r URLShortenerService) AddNewURL(url string) int {

@@ -1,20 +1,20 @@
 package repository
 
 type URLRepositoryInMemoryImpl struct {
-	storage map[int]string
+	Storage map[int]string
 }
 
 func NewURLRepositoryInMemoryImpl() URLRepository {
-	return &URLRepositoryInMemoryImpl{storage: make(map[int]string)}
+	return &URLRepositoryInMemoryImpl{Storage: make(map[int]string)}
 }
 
 func (receiver *URLRepositoryInMemoryImpl) Save(url string) int {
-	id := len(receiver.storage)
-	receiver.storage[id] = url
+	id := len(receiver.Storage)
+	receiver.Storage[id] = url
 	return id
 }
 
 func (receiver URLRepositoryInMemoryImpl) GetByID(id int) string {
-	s := receiver.storage[id]
+	s := receiver.Storage[id]
 	return s
 }

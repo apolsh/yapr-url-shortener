@@ -9,8 +9,9 @@ import (
 	"strings"
 )
 
-func NewHandler(adress string) *http.ServeMux {
-	shortenerService := service.NewURLShortenerService()
+func NewHandler(address string, service *service.URLShortenerService) *http.ServeMux {
+	//shortenerService := service.NewURLShortenerService(repository.NewURLRepositoryInMemoryImpl())
+	shortenerService := service
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -25,7 +26,7 @@ func NewHandler(adress string) *http.ServeMux {
 					urlID := shortenerService.AddNewURL(string(body))
 					w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 					w.WriteHeader(201)
-					_, err := w.Write([]byte(fmt.Sprintf("http://%s/%d", adress, urlID)))
+					_, err := w.Write([]byte(fmt.Sprintf("http://%s/%d", address, urlID)))
 					if err != nil {
 						http.Error(w, "Error while generating response", http.StatusInternalServerError)
 					}
