@@ -5,8 +5,7 @@ on:
   push:
     branches:
       - main
-      - increment1
-      - increment2
+      - increment3
 
 jobs:
 

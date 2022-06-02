@@ -1,19 +1,7 @@
 package service
 
-import "github.com/apolsh/yapr-url-shortener/internal/app/repository"
+type URLShortenerService interface {
+	AddNewURL(url string) int
 
-type URLShortenerService struct {
-	repository repository.URLRepository
-}
-
-func NewURLShortenerService(repo repository.URLRepository) *URLShortenerService {
-	return &URLShortenerService{repository: repo}
-}
-
-func (r URLShortenerService) AddNewURL(url string) int {
-	return r.repository.Save(url)
-}
-
-func (r URLShortenerService) GetURLByID(id int) string {
-	return r.repository.GetByID(id)
+	GetURLByID(id int) string
 }

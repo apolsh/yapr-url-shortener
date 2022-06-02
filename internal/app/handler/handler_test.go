@@ -1,109 +1,123 @@
 package handler
 
 import (
+	"fmt"
+	"github.com/apolsh/yapr-url-shortener/internal/app/mock"
 	"github.com/apolsh/yapr-url-shortener/internal/app/service"
+	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 )
 
-const contentTypeTextPlain = "text/plain; charset=utf-8"
-const contentTypeTextHTML = "text/html; charset=utf-8"
-
-var testURL1 = "https://riptutorial.com/go/example/2570/http-hello-world-with-custom-server-and-mux"
 var contentTypeHeader = map[string]string{
 	"Content-Type": "text/plain",
 }
+var emptyHeaders = make(map[string]string)
+var testURL1 = "https://riptutorial.com/go/example/2570/http-hello-world-with-custom-server-and-mux"
+var testURL2 = "https://bitfieldconsulting.com/golang/map-declaring-initializing"
 
-type MockURLRepository struct {
-	Storage map[int]string
-}
-
-func (receiver *MockURLRepository) Save(url string) int {
-	id := len(receiver.Storage)
-	receiver.Storage[id] = url
-	return id
-}
-
-func (receiver MockURLRepository) GetByID(id int) string {
-	s := receiver.Storage[id]
-	return s
-}
-
-type expected struct {
-	contentType string
-	statusCode  int
-	body        string
-}
-
-func TestNewHandler(t *testing.T) {
-	tests := []struct {
-		name       string
-		method     string
-		request    string
-		headers    map[string]string
-		body       string
-		storedUrls map[int]string
-		expected   expected
-	}{
-		{
-			name:       "Adding single URL",
-			method:     http.MethodPost,
-			request:    "/",
-			headers:    contentTypeHeader,
-			body:       testURL1,
-			storedUrls: make(map[int]string),
-			expected: expected{
-				contentType: contentTypeTextPlain,
-				statusCode:  201,
-				body:        "",
-			},
-		},
-		{
-			name:       "Get single URL",
-			method:     http.MethodGet,
-			request:    "/0",
-			headers:    contentTypeHeader,
-			body:       "",
-			storedUrls: map[int]string{0: "https://www.google.com/"},
-			expected: expected{
-				contentType: contentTypeTextHTML,
-				statusCode:  307,
-				body:        "<a href=\"https://www.google.com/\">Temporary Redirect</a>.\n\n",
-			},
-		},
+func executeTestRequest(t *testing.T, server *httptest.Server, method, path, requestBody string, headers map[string]string) (*http.Response, string) {
+	var request *http.Request
+	var err error
+	if method == http.MethodGet {
+		request, err = http.NewRequest(method, server.URL+path, nil)
+	} else {
+		request, err = http.NewRequest(method, server.URL+path, strings.NewReader(requestBody))
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			var request *http.Request
-			if test.method == http.MethodGet {
-				request = httptest.NewRequest(test.method, test.request, nil)
-			} else {
-				request = httptest.NewRequest(test.method, test.request, strings.NewReader(test.body))
-			}
-			for k, v := range test.headers {
-				request.Header.Set(k, v)
-			}
-			recorder := httptest.NewRecorder()
-			h := NewHandler("localhost:8080", service.NewURLShortenerService(&MockURLRepository{test.storedUrls}))
-			h.ServeHTTP(recorder, request)
-			result := recorder.Result()
-
-			assert.Equal(t, test.expected.statusCode, result.StatusCode)
-			assert.Equal(t, test.expected.contentType, result.Header.Get("Content-Type"))
-
-			if len(test.expected.body) > 0 {
-				body, err := ioutil.ReadAll(result.Body)
-				require.NoError(t, err)
-				assert.Equal(t, test.expected.body, string(body))
-				err = result.Body.Close()
-				require.NoError(t, err)
-			}
-		})
+	require.NoError(t, err)
+	for k, v := range headers {
+		request.Header.Set(k, v)
 	}
+
+	response, err := http.DefaultClient.Do(request)
+	require.NoError(t, err)
+
+	body, err := io.ReadAll(response.Body)
+	require.NoError(t, err)
+
+	err = response.Body.Close()
+	require.NoError(t, err)
+
+	return response, string(body)
+}
+
+func TestIntegration(t *testing.T) {
+	addr := "localhost:8080"
+	h := NewURLShortenerHandler("http://"+addr, service.NewURLShortenerService(mock.NewURLRepositoryMock()))
+	r := chi.NewRouter()
+	h.Register(r)
+
+	server := httptest.NewServer(r)
+	defer server.Close()
+
+	t.Run("Adding and extracting multiple URL's", func(t *testing.T) {
+		response, stringBody := executeTestRequest(t, server, http.MethodPost, "", testURL1, contentTypeHeader)
+		err := response.Body.Close()
+		require.NoError(t, err)
+		assert.Equal(t, 201, response.StatusCode)
+		assert.Equal(t, fmt.Sprintf("http://%s/0", addr), stringBody)
+
+		response, stringBody = executeTestRequest(t, server, http.MethodPost, "", testURL2, contentTypeHeader)
+		err = response.Body.Close()
+		require.NoError(t, err)
+		assert.Equal(t, 201, response.StatusCode)
+		assert.Equal(t, fmt.Sprintf("http://%s/1", addr), stringBody)
+
+		response, _ = executeTestRequest(t, server, http.MethodGet, "/0", "", emptyHeaders)
+		err = response.Body.Close()
+		require.NoError(t, err)
+		assert.Equal(t, 200, response.StatusCode)
+		assert.Equal(t, testURL1, response.Request.URL.String())
+
+		response, _ = executeTestRequest(t, server, http.MethodGet, "/1", "", emptyHeaders)
+		err = response.Body.Close()
+		require.NoError(t, err)
+		assert.Equal(t, 200, response.StatusCode)
+		assert.Equal(t, testURL2, response.Request.URL.String())
+	})
+
+	t.Run("Extract wrong id", func(t *testing.T) {
+		response, body := executeTestRequest(t, server, http.MethodGet, "/100", "", emptyHeaders)
+		err := response.Body.Close()
+		require.NoError(t, err)
+		assert.Equal(t, 404, response.StatusCode)
+		assert.Equal(t, "404 page not found\n", body)
+	})
+
+	t.Run("Extract empty id", func(t *testing.T) {
+		response, _ := executeTestRequest(t, server, http.MethodGet, "/", "", emptyHeaders)
+		err := response.Body.Close()
+		require.NoError(t, err)
+		assert.Equal(t, 405, response.StatusCode)
+	})
+
+	t.Run("Extract wrong id type", func(t *testing.T) {
+		response, body := executeTestRequest(t, server, http.MethodGet, "/abc", "", emptyHeaders)
+		err := response.Body.Close()
+		require.NoError(t, err)
+		assert.Equal(t, 400, response.StatusCode)
+		assert.Equal(t, "Invalid parameter\n", body)
+	})
+
+	t.Run("Add with invalid content-type", func(t *testing.T) {
+		response, body := executeTestRequest(t, server, http.MethodPost, "", testURL2, map[string]string{"Content-Type": "application/json"})
+		err := response.Body.Close()
+		require.NoError(t, err)
+		assert.Equal(t, 400, response.StatusCode)
+		assert.Equal(t, "Invalid Content-Type\n", body)
+	})
+
+	t.Run("Send wrong http Method", func(t *testing.T) {
+		response, _ := executeTestRequest(t, server, http.MethodPut, "", testURL2, map[string]string{"Content-Type": "application/json"})
+		err := response.Body.Close()
+		require.NoError(t, err)
+		assert.Equal(t, 405, response.StatusCode)
+	})
+
 }

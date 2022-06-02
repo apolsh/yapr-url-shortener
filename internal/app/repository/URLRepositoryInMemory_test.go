@@ -33,7 +33,7 @@ func TestURLRepositoryInMemoryImpl_GetByID(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		repository := &URLRepositoryInMemoryImpl{Storage: test.repositoryMock}
+		repository := &URLRepositoryInMemory{Storage: test.repositoryMock}
 
 		t.Run(test.name, func(t *testing.T) {
 			resultMap := make(map[int]string)
@@ -73,7 +73,7 @@ func TestURLRepositoryInMemoryImpl_Save(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		repository := &URLRepositoryInMemoryImpl{Storage: test.repositoryMock}
+		repository := &URLRepositoryInMemory{Storage: test.repositoryMock}
 
 		t.Run(test.name, func(t *testing.T) {
 			resultMap := make(map[int]string)

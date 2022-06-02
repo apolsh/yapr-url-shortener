@@ -1,27 +1,33 @@
 package main
 
 import (
+	"fmt"
 	"github.com/apolsh/yapr-url-shortener/internal/app/handler"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository"
 	"github.com/apolsh/yapr-url-shortener/internal/app/service"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"log"
 	"net/http"
 )
 
-type ApplicationConfig struct {
-	baseURL          string
-	shortenerService *service.URLShortenerService
-	urlRepository    repository.URLRepository
-}
-
 func main() {
-	const baseURL = "localhost:8080"
-	config := ApplicationConfig{
-		baseURL:          "localhost:8080",
-		shortenerService: service.NewURLShortenerService(repository.NewURLRepositoryInMemoryImpl()),
-	}
+	const (
+		appProtocol = "http"
+		appDomain   = "localhost:8080"
+	)
 
-	mux := handler.NewHandler(config.baseURL, config.shortenerService)
-	s := &http.Server{Addr: baseURL, Handler: mux}
-	log.Fatal(s.ListenAndServe())
+	router := chi.NewRouter()
+
+	router.Use(middleware.RequestID)
+	router.Use(middleware.RealIP)
+	router.Use(middleware.Logger)
+	router.Use(middleware.Recoverer)
+
+	urlShortenerStorage := repository.NewURLRepositoryInMemoryImpl()
+	urlShortenerService := service.NewURLShortenerService(urlShortenerStorage)
+	chiHandler := handler.NewURLShortenerHandler(fmt.Sprintf("%s://%s", appProtocol, appDomain), urlShortenerService)
+	chiHandler.Register(router)
+
+	log.Fatal(http.ListenAndServe(":8080", router))
 }

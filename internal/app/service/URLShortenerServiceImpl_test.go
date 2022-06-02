@@ -1,24 +1,10 @@
 package service
 
 import (
+	"github.com/apolsh/yapr-url-shortener/internal/app/mock"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
-
-type MockURLRepository struct {
-	Storage map[int]string
-}
-
-func (receiver *MockURLRepository) Save(url string) int {
-	id := len(receiver.Storage)
-	receiver.Storage[id] = url
-	return id
-}
-
-func (receiver MockURLRepository) GetByID(id int) string {
-	s := receiver.Storage[id]
-	return s
-}
 
 func TestURLShortenerService_AddNewURL(t *testing.T) {
 	tests := []struct {
@@ -48,7 +34,7 @@ func TestURLShortenerService_AddNewURL(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		service := &URLShortenerService{repository: &MockURLRepository{test.repositoryMock}}
+		service := &URLShortenerServiceImpl{repository: &mock.URLRepositoryMock{Storage: test.repositoryMock}}
 
 		t.Run(test.name, func(t *testing.T) {
 			resultMap := make(map[int]string)
@@ -88,7 +74,7 @@ func TestURLShortenerService_GetURLByID(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		service := &URLShortenerService{repository: &MockURLRepository{test.repositoryMock}}
+		service := &URLShortenerServiceImpl{repository: &mock.URLRepositoryMock{Storage: test.repositoryMock}}
 
 		t.Run(test.name, func(t *testing.T) {
 			resultMap := make(map[int]string)
