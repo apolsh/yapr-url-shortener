@@ -38,17 +38,19 @@ func (h *handler) GetURLHandler(w http.ResponseWriter, r *http.Request) {
 		id, err := strconv.Atoi(urlID)
 		if err != nil {
 			http.Error(w, "Invalid parameter", http.StatusBadRequest)
-		} else {
-			url := h.service.GetURLByID(id)
-			if url != "" {
-				http.Redirect(w, r, url, http.StatusTemporaryRedirect)
-			} else {
-				http.NotFound(w, r)
-			}
+			return
 		}
-	} else {
-		http.Error(w, "Invalid parameter", http.StatusBadRequest)
+		url := h.service.GetURLByID(id)
+		if url != "" {
+			http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+			return
+		}
+		http.NotFound(w, r)
+		return
 	}
+	http.Error(w, "Invalid parameter", http.StatusBadRequest)
+	return
+
 }
 
 func (h *handler) SaveURLHandler(w http.ResponseWriter, r *http.Request) {

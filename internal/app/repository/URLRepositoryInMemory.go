@@ -4,17 +4,21 @@ type URLRepositoryInMemory struct {
 	Storage map[int]string
 }
 
-func NewURLRepositoryInMemoryImpl() URLRepository {
+func NewURLRepositoryInMemory() URLRepository {
 	return &URLRepositoryInMemory{Storage: make(map[int]string)}
 }
 
-func (receiver *URLRepositoryInMemory) Save(url string) int {
-	id := len(receiver.Storage)
-	receiver.Storage[id] = url
+func (repository *URLRepositoryInMemory) Save(url string) int {
+	id := repository.NextID()
+	repository.Storage[id] = url
 	return id
 }
 
-func (receiver URLRepositoryInMemory) GetByID(id int) string {
-	s := receiver.Storage[id]
+func (repository URLRepositoryInMemory) GetByID(id int) string {
+	s := repository.Storage[id]
 	return s
+}
+
+func (repository *URLRepositoryInMemory) NextID() int {
+	return len(repository.Storage)
 }

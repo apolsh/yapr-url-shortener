@@ -24,7 +24,7 @@ func main() {
 	router.Use(middleware.Logger)
 	router.Use(middleware.Recoverer)
 
-	urlShortenerStorage := repository.NewURLRepositoryInMemoryImpl()
+	urlShortenerStorage := repository.NewURLRepositoryInMemory()
 	urlShortenerService := service.NewURLShortenerService(urlShortenerStorage)
 	chiHandler := handler.NewURLShortenerHandler(fmt.Sprintf("%s://%s", appProtocol, appDomain), urlShortenerService)
 	chiHandler.Register(router)
