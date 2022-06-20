@@ -23,8 +23,8 @@ func main() {
 
 	urlShortenerStorage := repository.NewURLRepositoryInMemory()
 	urlShortenerService := service.NewURLShortenerService(urlShortenerStorage)
-	chiHandler := handler.NewURLShortenerHandler(cfg.ServerAddress, urlShortenerService)
+	chiHandler := handler.NewURLShortenerHandler(cfg.BaseURL, urlShortenerService)
 	chiHandler.Register(router)
 
-	log.Fatal(http.ListenAndServe(cfg.BaseURL, router))
+	log.Fatal(http.ListenAndServe(cfg.ServerAddress, router))
 }
