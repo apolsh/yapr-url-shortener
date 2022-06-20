@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/apolsh/yapr-url-shortener/internal/app/mock"
 	"github.com/apolsh/yapr-url-shortener/internal/app/service"
+	"github.com/apolsh/yapr-url-shortener/internal/config"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -90,10 +91,10 @@ func TestHandler_GetURLHandler(t *testing.T) {
 	alreadyStoredURLs := make(map[int]string)
 	alreadyStoredURLs[0] = testURL1
 	alreadyStoredURLs[1] = testURL2
+	cfg := config.Load()
 
 	repositoryMock := mock.NewURLRepositoryMock(alreadyStoredURLs)
-	addr := "localhost:8080"
-	h := NewURLShortenerHandler("http://"+addr, service.NewURLShortenerService(repositoryMock))
+	h := NewURLShortenerHandler(cfg.ServerAddress, service.NewURLShortenerService(repositoryMock))
 	r := chi.NewRouter()
 	h.Register(r)
 
@@ -133,8 +134,8 @@ func TestHandler_GetURLHandler(t *testing.T) {
 }
 
 func TestHandler_SaveURLHandler(t *testing.T) {
-	addr := "localhost:8080"
-	h := NewURLShortenerHandler("http://"+addr, service.NewURLShortenerService(mock.NewURLRepositoryMock(make(map[int]string))))
+	cfg := config.Load()
+	h := NewURLShortenerHandler(cfg.ServerAddress, service.NewURLShortenerService(mock.NewURLRepositoryMock(make(map[int]string))))
 	r := chi.NewRouter()
 	h.Register(r)
 
@@ -146,13 +147,13 @@ func TestHandler_SaveURLHandler(t *testing.T) {
 		err := response.Body.Close()
 		require.NoError(t, err)
 		assert.Equal(t, 201, response.StatusCode)
-		assert.Equal(t, fmt.Sprintf("http://%s/0", addr), stringBody)
+		assert.Equal(t, fmt.Sprintf("%s/0", cfg.ServerAddress), stringBody)
 
 		response, stringBody = executeSaveURLRequest(t, server, testURL2, saveURLHeaders)
 		err = response.Body.Close()
 		require.NoError(t, err)
 		assert.Equal(t, 201, response.StatusCode)
-		assert.Equal(t, fmt.Sprintf("http://%s/1", addr), stringBody)
+		assert.Equal(t, fmt.Sprintf("%s/1", cfg.ServerAddress), stringBody)
 	})
 
 	t.Run("Add with invalid content-type", func(t *testing.T) {
@@ -165,8 +166,8 @@ func TestHandler_SaveURLHandler(t *testing.T) {
 }
 
 func TestHandler_SaveURLJSONHandler(t *testing.T) {
-	addr := "localhost:8080"
-	h := NewURLShortenerHandler("http://"+addr, service.NewURLShortenerService(mock.NewURLRepositoryMock(make(map[int]string))))
+	cfg := config.Load()
+	h := NewURLShortenerHandler(cfg.ServerAddress, service.NewURLShortenerService(mock.NewURLRepositoryMock(make(map[int]string))))
 	r := chi.NewRouter()
 	h.Register(r)
 
@@ -182,7 +183,7 @@ func TestHandler_SaveURLJSONHandler(t *testing.T) {
 		err = response.Body.Close()
 		require.NoError(t, err)
 		assert.Equal(t, 201, response.StatusCode)
-		assert.JSONEq(t, fmt.Sprintf(`{"result":"http://%s/0"}`, addr), stringBody)
+		assert.JSONEq(t, fmt.Sprintf(`{"result":"%s/0"}`, cfg.ServerAddress), stringBody)
 
 		marshal, err = json.Marshal(&SaveURLBody{URL: testURL2})
 		require.NoError(t, err)
@@ -191,7 +192,7 @@ func TestHandler_SaveURLJSONHandler(t *testing.T) {
 		err = response.Body.Close()
 		require.NoError(t, err)
 		assert.Equal(t, 201, response.StatusCode)
-		assert.JSONEq(t, fmt.Sprintf(`{"result":"http://%s/1"}`, addr), stringBody)
+		assert.JSONEq(t, fmt.Sprintf(`{"result":"%s/1"}`, cfg.ServerAddress), stringBody)
 	})
 
 	//t.Run("Add with invalid content-type", func(t *testing.T) {
@@ -204,8 +205,8 @@ func TestHandler_SaveURLJSONHandler(t *testing.T) {
 }
 
 func TestHandler_CommonTests(t *testing.T) {
-	addr := "localhost:8080"
-	h := NewURLShortenerHandler("http://"+addr, service.NewURLShortenerService(mock.NewURLRepositoryMock(make(map[int]string))))
+	cfg := config.Load()
+	h := NewURLShortenerHandler(cfg.ServerAddress, service.NewURLShortenerService(mock.NewURLRepositoryMock(make(map[int]string))))
 	r := chi.NewRouter()
 	h.Register(r)
 
