@@ -5,9 +5,14 @@ import (
 	"log"
 )
 
+const (
+	defaultServerAddress = "http://localhost:8080"
+	defaultBaseUrl       = "localhost:8080"
+)
+
 type Config struct {
-	ServerAddress string `env:"SERVER_ADDRESS,required"`
-	BaseURL       string `env:"BASE_URL,required"`
+	ServerAddress string `env:"SERVER_ADDRESS"`
+	BaseURL       string `env:"BASE_URL"`
 }
 
 func Load() Config {
@@ -16,5 +21,12 @@ func Load() Config {
 		log.Println("Failed to load environment variables, will use default.")
 		cfg = Config{ServerAddress: "http://localhost:8080", BaseURL: "localhost:8080"}
 	}
+	if cfg.BaseURL == "" {
+		cfg.BaseURL = defaultBaseUrl
+	}
+	if cfg.ServerAddress == "" {
+		cfg.ServerAddress = defaultServerAddress
+	}
+
 	return cfg
 }
