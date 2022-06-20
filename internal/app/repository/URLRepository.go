@@ -5,5 +5,5 @@ type URLRepository interface {
 
 	GetByID(id int) string
 
-	nextID() int
+	NextID() int
 }

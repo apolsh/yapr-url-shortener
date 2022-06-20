@@ -77,7 +77,7 @@ func NewURLRepositoryInMemory(fileStorage string) URLRepository {
 }
 
 func (repository *URLRepositoryInMemory) Save(url string) int {
-	id := repository.nextID()
+	id := repository.NextID()
 	if repository.backup != nil {
 		err := repository.backup.write(url)
 		if err != nil {
@@ -93,6 +93,6 @@ func (repository URLRepositoryInMemory) GetByID(id int) string {
 	return s
 }
 
-func (repository *URLRepositoryInMemory) nextID() int {
+func (repository *URLRepositoryInMemory) NextID() int {
 	return len(repository.Storage)
 }
