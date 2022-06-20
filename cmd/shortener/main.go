@@ -12,6 +12,7 @@ import (
 )
 
 func main() {
+	//1
 	cfg := config.Load()
 
 	router := chi.NewRouter()
