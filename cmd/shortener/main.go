@@ -12,6 +12,7 @@ import (
 )
 
 func main() {
+	//1
 	const (
 		appProtocol = "http"
 		appDomain   = "localhost:8080"
