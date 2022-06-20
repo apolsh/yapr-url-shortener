@@ -12,7 +12,6 @@ import (
 )
 
 func main() {
-	//1
 	cfg := config.Load()
 
 	router := chi.NewRouter()
@@ -27,5 +26,5 @@ func main() {
 	chiHandler := handler.NewURLShortenerHandler(cfg.ServerAddress, urlShortenerService)
 	chiHandler.Register(router)
 
-	log.Fatal(http.ListenAndServe(":8080", router))
+	log.Fatal(http.ListenAndServe(cfg.BaseURL, router))
 }

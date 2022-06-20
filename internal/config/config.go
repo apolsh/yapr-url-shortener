@@ -13,7 +13,8 @@ type Config struct {
 func Load() Config {
 	var cfg Config
 	if err := env.Parse(&cfg); err != nil {
-		log.Fatal(err)
+		log.Println("Failed to load environment variables, will use default.")
+		cfg = Config{ServerAddress: "http://localhost:8080", BaseURL: "localhost:8080"}
 	}
 	return cfg
 }
