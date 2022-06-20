@@ -12,7 +12,7 @@ import (
 )
 
 type SaveURLBody struct {
-	Url string `json:"url"`
+	URL string `json:"url"`
 }
 
 type SaveURLResponse struct {
@@ -88,11 +88,11 @@ func (h *handler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-	urlID := h.service.AddNewURL(body.Url)
+	urlID := h.service.AddNewURL(body.URL)
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(201)
-	responseUrl := fmt.Sprintf("%s/%d", h.address, urlID)
-	if err := json.NewEncoder(w).Encode(&SaveURLResponse{Result: responseUrl}); err != nil {
+	responseURL := fmt.Sprintf("%s/%d", h.address, urlID)
+	if err := json.NewEncoder(w).Encode(&SaveURLResponse{Result: responseURL}); err != nil {
 		http.Error(w, "Error while generating response", http.StatusInternalServerError)
 	}
 }

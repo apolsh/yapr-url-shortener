@@ -175,7 +175,7 @@ func TestHandler_SaveURLJSONHandler(t *testing.T) {
 
 	t.Run("Adding and extracting multiple URL's", func(t *testing.T) {
 
-		marshal, err := json.Marshal(&SaveURLBody{Url: testURL1})
+		marshal, err := json.Marshal(&SaveURLBody{URL: testURL1})
 		require.NoError(t, err)
 
 		response, stringBody := executeSaveURLJSONRequest(t, server, string(marshal), saveURLJSONHeaders)
@@ -184,7 +184,7 @@ func TestHandler_SaveURLJSONHandler(t *testing.T) {
 		assert.Equal(t, 201, response.StatusCode)
 		assert.JSONEq(t, fmt.Sprintf(`{"result":"http://%s/0"}`, addr), stringBody)
 
-		marshal, err = json.Marshal(&SaveURLBody{Url: testURL2})
+		marshal, err = json.Marshal(&SaveURLBody{URL: testURL2})
 		require.NoError(t, err)
 
 		response, stringBody = executeSaveURLJSONRequest(t, server, string(marshal), saveURLJSONHeaders)
