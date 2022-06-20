@@ -9,9 +9,11 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"log"
 	"net/http"
+	"os"
 )
 
 func main() {
+	os.Setenv("FILE_STORAGE_PATH", "/home/alphabeta/backup_yapr.log")
 	cfg := config.Load()
 
 	router := chi.NewRouter()
@@ -21,7 +23,7 @@ func main() {
 	router.Use(middleware.Logger)
 	router.Use(middleware.Recoverer)
 
-	urlShortenerStorage := repository.NewURLRepositoryInMemory()
+	urlShortenerStorage := repository.NewURLRepositoryInMemory(cfg.FileStoragePath)
 	urlShortenerService := service.NewURLShortenerService(urlShortenerStorage)
 	chiHandler := handler.NewURLShortenerHandler(cfg.BaseURL, urlShortenerService)
 	chiHandler.Register(router)

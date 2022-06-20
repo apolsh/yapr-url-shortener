@@ -11,7 +11,7 @@ func NewURLRepositoryMock(predefined map[int]string) repository.URLRepository {
 }
 
 func (repository *URLRepositoryMock) Save(url string) int {
-	id := repository.NextID()
+	id := repository.nextID()
 	repository.Storage[id] = url
 	return id
 }
@@ -21,6 +21,6 @@ func (repository URLRepositoryMock) GetByID(id int) string {
 	return s
 }
 
-func (repository *URLRepositoryMock) NextID() int {
+func (repository *URLRepositoryMock) nextID() int {
 	return len(repository.Storage)
 }
