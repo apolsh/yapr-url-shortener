@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/apolsh/yapr-url-shortener/internal/app/service"
 	"github.com/go-chi/chi/v5"
@@ -9,6 +10,14 @@ import (
 	"strconv"
 	"strings"
 )
+
+type SaveURLBody struct {
+	Url string `json:"url"`
+}
+
+type SaveURLResponse struct {
+	Result string `json:"result"`
+}
 
 type Handler interface {
 	Register(router *chi.Mux)
@@ -30,6 +39,7 @@ func (h *handler) Register(router *chi.Mux) {
 	router.Route("/", func(r chi.Router) {
 		r.Get("/{urlID}", h.GetURLHandler)
 		r.Post("/", h.SaveURLHandler)
+		r.Post("/api/shorten", h.SaveURLJSONHandler)
 	})
 }
 
@@ -69,4 +79,20 @@ func (h *handler) SaveURLHandler(w http.ResponseWriter, r *http.Request) {
 
 	}
 	http.Error(w, "Invalid Content-Type", http.StatusBadRequest)
+}
+
+func (h *handler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) {
+	var body SaveURLBody
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	urlID := h.service.AddNewURL(body.Url)
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(201)
+	responseUrl := fmt.Sprintf("%s/%d", h.address, urlID)
+	if err := json.NewEncoder(w).Encode(&SaveURLResponse{Result: responseUrl}); err != nil {
+		http.Error(w, "Error while generating response", http.StatusInternalServerError)
+	}
 }

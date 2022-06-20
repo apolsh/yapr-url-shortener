@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/apolsh/yapr-url-shortener/internal/app/mock"
 	"github.com/apolsh/yapr-url-shortener/internal/app/service"
@@ -16,6 +17,9 @@ import (
 
 var saveURLHeaders = map[string]string{
 	"Content-Type": "text/plain",
+}
+var saveURLJSONHeaders = map[string]string{
+	"Content-Type": "application/json",
 }
 var testURL1 = "https://riptutorial.com/go/example/2570/http-hello-world-with-custom-server-and-mux"
 var testURL2 = "https://bitfieldconsulting.com/golang/map-declaring-initializing"
@@ -43,6 +47,28 @@ func executeSaveURLRequest(t *testing.T, server *httptest.Server, requestBody st
 	var err error
 
 	request, err = http.NewRequest(http.MethodPost, server.URL, strings.NewReader(requestBody))
+
+	require.NoError(t, err)
+	for k, v := range headers {
+		request.Header.Set(k, v)
+	}
+
+	response, err := http.DefaultClient.Do(request)
+	require.NoError(t, err)
+
+	body, err := io.ReadAll(response.Body)
+	require.NoError(t, err)
+
+	defer response.Body.Close()
+
+	return response, string(body)
+}
+
+func executeSaveURLJSONRequest(t *testing.T, server *httptest.Server, requestBody string, headers map[string]string) (*http.Response, string) {
+	var request *http.Request
+	var err error
+
+	request, err = http.NewRequest(http.MethodPost, server.URL+"/api/shorten", strings.NewReader(requestBody))
 
 	require.NoError(t, err)
 	for k, v := range headers {
@@ -136,6 +162,45 @@ func TestHandler_SaveURLHandler(t *testing.T) {
 		assert.Equal(t, 400, response.StatusCode)
 		assert.Equal(t, "Invalid Content-Type\n", body)
 	})
+}
+
+func TestHandler_SaveURLJSONHandler(t *testing.T) {
+	addr := "localhost:8080"
+	h := NewURLShortenerHandler("http://"+addr, service.NewURLShortenerService(mock.NewURLRepositoryMock(make(map[int]string))))
+	r := chi.NewRouter()
+	h.Register(r)
+
+	server := httptest.NewServer(r)
+	defer server.Close()
+
+	t.Run("Adding and extracting multiple URL's", func(t *testing.T) {
+
+		marshal, err := json.Marshal(&SaveURLBody{Url: testURL1})
+		require.NoError(t, err)
+
+		response, stringBody := executeSaveURLJSONRequest(t, server, string(marshal), saveURLJSONHeaders)
+		err = response.Body.Close()
+		require.NoError(t, err)
+		assert.Equal(t, 201, response.StatusCode)
+		assert.JSONEq(t, fmt.Sprintf(`{"result":"http://%s/0"}`, addr), stringBody)
+
+		marshal, err = json.Marshal(&SaveURLBody{Url: testURL2})
+		require.NoError(t, err)
+
+		response, stringBody = executeSaveURLJSONRequest(t, server, string(marshal), saveURLJSONHeaders)
+		err = response.Body.Close()
+		require.NoError(t, err)
+		assert.Equal(t, 201, response.StatusCode)
+		assert.JSONEq(t, fmt.Sprintf(`{"result":"http://%s/1"}`, addr), stringBody)
+	})
+
+	//t.Run("Add with invalid content-type", func(t *testing.T) {
+	//	response, body := executeSaveURLRequest(t, server, testURL2, map[string]string{"Content-Type": "application/json"})
+	//	err := response.Body.Close()
+	//	require.NoError(t, err)
+	//	assert.Equal(t, 400, response.StatusCode)
+	//	assert.Equal(t, "Invalid Content-Type\n", body)
+	//})
 }
 
 func TestHandler_CommonTests(t *testing.T) {
