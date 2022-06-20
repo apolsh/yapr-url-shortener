@@ -9,11 +9,9 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"log"
 	"net/http"
-	"os"
 )
 
 func main() {
-	os.Setenv("FILE_STORAGE_PATH", "/home/alphabeta/backup_yapr.log")
 	cfg := config.Load()
 
 	router := chi.NewRouter()
