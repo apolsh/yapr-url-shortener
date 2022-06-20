@@ -49,8 +49,6 @@ func (h *handler) GetURLHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Error(w, "Invalid parameter", http.StatusBadRequest)
-	return
-
 }
 
 func (h *handler) SaveURLHandler(w http.ResponseWriter, r *http.Request) {

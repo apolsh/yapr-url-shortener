@@ -25,6 +25,7 @@ func executeGetURLRequest(t *testing.T, server *httptest.Server, path string) (*
 	var err error
 
 	request, err = http.NewRequest(http.MethodGet, server.URL+path, nil)
+	require.NoError(t, err)
 
 	response, err := http.DefaultClient.Do(request)
 	require.NoError(t, err)
