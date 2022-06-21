@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"github.com/apolsh/yapr-url-shortener/internal/app/middleware"
@@ -65,7 +66,20 @@ func (h *handler) GetURLHandler(w http.ResponseWriter, r *http.Request) {
 
 func (h *handler) SaveURLHandler(w http.ResponseWriter, r *http.Request) {
 	if ct := r.Header.Get("Content-Type"); strings.Contains(ct, "text/html") || strings.Contains(ct, "text/plain") {
-		body, err := io.ReadAll(r.Body)
+		var reader io.Reader
+		if r.Header.Get(`Content-Encoding`) == `gzip` {
+			gz, err := gzip.NewReader(r.Body)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			reader = gz
+			defer gz.Close()
+		} else {
+			reader = r.Body
+		}
+
+		body, err := io.ReadAll(reader)
 		if err != nil {
 			http.Error(w, "Error while body reading", http.StatusInternalServerError)
 		} else {
@@ -84,9 +98,22 @@ func (h *handler) SaveURLHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) {
+	var reader io.Reader
+	if r.Header.Get(`Content-Encoding`) == `gzip` {
+		gz, err := gzip.NewReader(r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		reader = gz
+		defer gz.Close()
+	} else {
+		reader = r.Body
+	}
+
 	var body SaveURLBody
 
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+	if err := json.NewDecoder(reader).Decode(&body); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
