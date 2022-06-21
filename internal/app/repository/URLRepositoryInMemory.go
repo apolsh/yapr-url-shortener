@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-type backup interface {
+type backupStorage interface {
 	read() (string, error)
 	write(url string) error
 }
@@ -48,19 +48,19 @@ func NewFileBackup(filename string) (*fileBackup, error) {
 }
 
 type URLRepositoryInMemory struct {
-	Storage map[int]string
-	backup  backup
+	Storage       map[int]string
+	backupStorage backupStorage
 }
 
 func NewURLRepositoryInMemory(fileStorage string) URLRepository {
 	storage := make(map[int]string)
 	if fileStorage != "" {
-		backupper, err := NewFileBackup(fileStorage)
+		backupStorage, err := NewFileBackup(fileStorage)
 		if err != nil {
 			panic(fmt.Sprintf("Repository initialization error: %s", err))
 		}
 		for {
-			url, err := backupper.read()
+			url, err := backupStorage.read()
 			if err != nil {
 				panic(fmt.Sprintf("Backup restore error: %s", err))
 			}
@@ -69,17 +69,17 @@ func NewURLRepositoryInMemory(fileStorage string) URLRepository {
 			}
 			storage[len(storage)] = url
 		}
-		return &URLRepositoryInMemory{Storage: storage, backup: backupper}
+		return &URLRepositoryInMemory{Storage: storage, backupStorage: backupStorage}
 
 	}
 
-	return &URLRepositoryInMemory{Storage: storage, backup: nil}
+	return &URLRepositoryInMemory{Storage: storage, backupStorage: nil}
 }
 
 func (repository *URLRepositoryInMemory) Save(url string) int {
 	id := repository.NextID()
-	if repository.backup != nil {
-		err := repository.backup.write(url)
+	if repository.backupStorage != nil {
+		err := repository.backupStorage.write(url)
 		if err != nil {
 			return 0
 		}

@@ -30,6 +30,15 @@ type handler struct {
 	service service.URLShortenerService
 }
 
+func isValidContentType(contentType string, allowedTypes []string) bool {
+	for _, allowed := range allowedTypes {
+		if strings.Contains(contentType, allowed) {
+			return true
+		}
+	}
+	return false
+}
+
 func NewURLShortenerHandler(appAddress string, serviceImpl service.URLShortenerService) Handler {
 	return &handler{
 		address: appAddress,
@@ -38,7 +47,7 @@ func NewURLShortenerHandler(appAddress string, serviceImpl service.URLShortenerS
 }
 
 func (h *handler) Register(router *chi.Mux) {
-	router.Use(middleware.GZIPHandle)
+	router.Use(middleware.CompressResponse)
 	router.Route("/", func(r chi.Router) {
 		r.Get("/{urlID}", h.GetURLHandler)
 		r.Post("/", h.SaveURLHandler)
@@ -65,19 +74,13 @@ func (h *handler) GetURLHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) SaveURLHandler(w http.ResponseWriter, r *http.Request) {
-	if ct := r.Header.Get("Content-Type"); strings.Contains(ct, "text") || strings.Contains(ct, "text/plain") || strings.Contains(ct, "application/x-gzip") {
-		var reader io.Reader
-		if r.Header.Get(`Content-Encoding`) == `gzip` {
-			gz, err := gzip.NewReader(r.Body)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			reader = gz
-			defer gz.Close()
-		} else {
-			reader = r.Body
+	if isValidContentType(r.Header.Get("Content-Type"), []string{"text", "text/plain", "application/x-gzip"}) {
+		reader, err := getBodyReader(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
+		defer reader.Close()
 
 		body, err := io.ReadAll(reader)
 		if err != nil {
@@ -94,34 +97,46 @@ func (h *handler) SaveURLHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 	}
-	http.Error(w, "Invalid Content-Type", http.StatusBadRequest)
+	http.Error(w, "Invalid Content-Type: "+r.Header.Get("Content-Type"), http.StatusBadRequest)
 }
 
 func (h *handler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) {
-	var reader io.Reader
-	if r.Header.Get(`Content-Encoding`) == `gzip` {
-		gz, err := gzip.NewReader(r.Body)
+	if isValidContentType(r.Header.Get("Content-Type"), []string{"application/json", "application/x-gzip"}) {
+		reader, err := getBodyReader(r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		defer reader.Close()
+
+		var body SaveURLBody
+
+		if err := json.NewDecoder(reader).Decode(&body); err != nil {
+			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			return
+		}
+		urlID := h.service.AddNewURL(body.URL)
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(201)
+		responseURL := fmt.Sprintf("%s/%d", h.address, urlID)
+		if err := json.NewEncoder(w).Encode(&SaveURLResponse{Result: responseURL}); err != nil {
+			http.Error(w, "Error while generating response", http.StatusInternalServerError)
+		}
+		return
+	}
+	http.Error(w, "Invalid Content-Type: "+r.Header.Get("Content-Type"), http.StatusBadRequest)
+}
+
+func getBodyReader(r *http.Request) (io.ReadCloser, error) {
+	var reader io.ReadCloser
+	if r.Header.Get(`Content-Encoding`) == `gzip` {
+		gz, err := gzip.NewReader(r.Body)
+		if err != nil {
+			return nil, err
+		}
 		reader = gz
-		defer gz.Close()
 	} else {
 		reader = r.Body
 	}
-
-	var body SaveURLBody
-
-	if err := json.NewDecoder(reader).Decode(&body); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-	urlID := h.service.AddNewURL(body.URL)
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(201)
-	responseURL := fmt.Sprintf("%s/%d", h.address, urlID)
-	if err := json.NewEncoder(w).Encode(&SaveURLResponse{Result: responseURL}); err != nil {
-		http.Error(w, "Error while generating response", http.StatusInternalServerError)
-	}
+	return reader, nil
 }

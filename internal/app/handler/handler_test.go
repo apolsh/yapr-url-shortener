@@ -166,11 +166,11 @@ func TestHandler_SaveURLHandler(t *testing.T) {
 	})
 
 	t.Run("Add with invalid content-type", func(t *testing.T) {
-		response, body := executeSaveURLRequest(t, server, testURL2, map[string]string{"Content-Type": "application/json"})
+		response, body := executeSaveURLRequest(t, server, testURL2, map[string]string{"Content-Type": "multipart/form-data"})
 		err := response.Body.Close()
 		require.NoError(t, err)
 		assert.Equal(t, 400, response.StatusCode)
-		assert.Equal(t, "Invalid Content-Type\n", body)
+		assert.Equal(t, "Invalid Content-Type: multipart/form-data\n", body)
 	})
 }
 
