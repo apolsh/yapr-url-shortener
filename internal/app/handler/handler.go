@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/apolsh/yapr-url-shortener/internal/app/middleware"
 	"github.com/apolsh/yapr-url-shortener/internal/app/service"
 	"github.com/go-chi/chi/v5"
 	"io"
@@ -36,6 +37,7 @@ func NewURLShortenerHandler(appAddress string, serviceImpl service.URLShortenerS
 }
 
 func (h *handler) Register(router *chi.Mux) {
+	router.Use(middleware.GZIPHandle)
 	router.Route("/", func(r chi.Router) {
 		r.Get("/{urlID}", h.GetURLHandler)
 		r.Post("/", h.SaveURLHandler)

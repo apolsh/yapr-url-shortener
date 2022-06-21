@@ -3,9 +3,9 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/apolsh/yapr-url-shortener/internal/app/config"
 	"github.com/apolsh/yapr-url-shortener/internal/app/mock"
 	"github.com/apolsh/yapr-url-shortener/internal/app/service"
-	"github.com/apolsh/yapr-url-shortener/internal/config"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -87,11 +87,20 @@ func executeSaveURLJSONRequest(t *testing.T, server *httptest.Server, requestBod
 	return response, string(body)
 }
 
+var cfg config.Config
+
+func getConfig() config.Config {
+	if cfg == (config.Config{}) {
+		cfg = config.Load()
+	}
+	return cfg
+}
+
 func TestHandler_GetURLHandler(t *testing.T) {
 	alreadyStoredURLs := make(map[int]string)
 	alreadyStoredURLs[0] = testURL1
 	alreadyStoredURLs[1] = testURL2
-	cfg := config.Load()
+	cfg := getConfig()
 
 	repositoryMock := mock.NewURLRepositoryMock(alreadyStoredURLs)
 	h := NewURLShortenerHandler(cfg.BaseURL, service.NewURLShortenerService(repositoryMock))
@@ -134,7 +143,7 @@ func TestHandler_GetURLHandler(t *testing.T) {
 }
 
 func TestHandler_SaveURLHandler(t *testing.T) {
-	cfg := config.Load()
+	cfg := getConfig()
 	h := NewURLShortenerHandler(cfg.BaseURL, service.NewURLShortenerService(mock.NewURLRepositoryMock(make(map[int]string))))
 	r := chi.NewRouter()
 	h.Register(r)
@@ -166,7 +175,7 @@ func TestHandler_SaveURLHandler(t *testing.T) {
 }
 
 func TestHandler_SaveURLJSONHandler(t *testing.T) {
-	cfg := config.Load()
+	cfg := getConfig()
 	h := NewURLShortenerHandler(cfg.BaseURL, service.NewURLShortenerService(mock.NewURLRepositoryMock(make(map[int]string))))
 	r := chi.NewRouter()
 	h.Register(r)
@@ -205,7 +214,7 @@ func TestHandler_SaveURLJSONHandler(t *testing.T) {
 }
 
 func TestHandler_CommonTests(t *testing.T) {
-	cfg := config.Load()
+	cfg := getConfig()
 	h := NewURLShortenerHandler(cfg.BaseURL, service.NewURLShortenerService(mock.NewURLRepositoryMock(make(map[int]string))))
 	r := chi.NewRouter()
 	h.Register(r)
