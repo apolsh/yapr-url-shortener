@@ -65,7 +65,7 @@ func (h *handler) GetURLHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) SaveURLHandler(w http.ResponseWriter, r *http.Request) {
-	if ct := r.Header.Get("Content-Type"); strings.Contains(ct, "text") {
+	if ct := r.Header.Get("Content-Type"); strings.Contains(ct, "text") || strings.Contains(ct, "text/plain") || strings.Contains(ct, "application/x-gzip") {
 		var reader io.Reader
 		if r.Header.Get(`Content-Encoding`) == `gzip` {
 			gz, err := gzip.NewReader(r.Body)
@@ -94,7 +94,7 @@ func (h *handler) SaveURLHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 	}
-	http.Error(w, "Invalid Content-Type: "+r.Header.Get("Content-Type"), http.StatusBadRequest)
+	http.Error(w, "Invalid Content-Type", http.StatusBadRequest)
 }
 
 func (h *handler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) {
