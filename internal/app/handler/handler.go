@@ -30,7 +30,7 @@ type handler struct {
 	service service.URLShortenerService
 }
 
-func isValidContentType(contentType string, allowedTypes []string) bool {
+func isValidContentType(contentType string, allowedTypes ...string) bool {
 	for _, allowed := range allowedTypes {
 		if strings.Contains(contentType, allowed) {
 			return true
@@ -74,7 +74,7 @@ func (h *handler) GetURLHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) SaveURLHandler(w http.ResponseWriter, r *http.Request) {
-	if isValidContentType(r.Header.Get("Content-Type"), []string{"text", "text/plain", "application/x-gzip"}) {
+	if isValidContentType(r.Header.Get("Content-Type"), "text", "text/plain", "application/x-gzip") {
 		reader, err := getBodyReader(r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -101,7 +101,7 @@ func (h *handler) SaveURLHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) {
-	if isValidContentType(r.Header.Get("Content-Type"), []string{"application/json", "application/x-gzip"}) {
+	if isValidContentType(r.Header.Get("Content-Type"), "application/json", "application/x-gzip") {
 		reader, err := getBodyReader(r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -128,15 +128,12 @@ func (h *handler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getBodyReader(r *http.Request) (io.ReadCloser, error) {
-	var reader io.ReadCloser
 	if r.Header.Get(`Content-Encoding`) == `gzip` {
 		gz, err := gzip.NewReader(r.Body)
 		if err != nil {
 			return nil, err
 		}
-		reader = gz
-	} else {
-		reader = r.Body
+		return gz, nil
 	}
-	return reader, nil
+	return r.Body, nil
 }
