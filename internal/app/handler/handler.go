@@ -3,13 +3,17 @@ package handler
 import (
 	"compress/gzip"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/apolsh/yapr-url-shortener/internal/app/crypto"
 	"github.com/apolsh/yapr-url-shortener/internal/app/middleware"
+	"github.com/apolsh/yapr-url-shortener/internal/app/repository"
+	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
 	"github.com/apolsh/yapr-url-shortener/internal/app/service"
 	"github.com/go-chi/chi/v5"
 	"io"
 	"net/http"
-	"strconv"
+	"net/url"
 	"strings"
 )
 
@@ -26,8 +30,9 @@ type Handler interface {
 }
 
 type handler struct {
-	address string
-	service service.URLShortenerService
+	address            string
+	service            service.URLShortenerService
+	authCryptoProvider crypto.Provider
 }
 
 func isValidContentType(contentType string, allowedTypes ...string) bool {
@@ -39,17 +44,20 @@ func isValidContentType(contentType string, allowedTypes ...string) bool {
 	return false
 }
 
-func NewURLShortenerHandler(appAddress string, serviceImpl service.URLShortenerService) Handler {
+func NewURLShortenerHandler(appAddress string, serviceImpl service.URLShortenerService, provider crypto.Provider) Handler {
 	return &handler{
-		address: appAddress,
-		service: serviceImpl,
+		address:            appAddress,
+		service:            serviceImpl,
+		authCryptoProvider: provider,
 	}
 }
 
 func (h *handler) Register(router *chi.Mux) {
 	router.Use(middleware.CompressResponse)
+	router.Use(middleware.AuthMiddleware(h.authCryptoProvider))
 	router.Route("/", func(r chi.Router) {
 		r.Get("/{urlID}", h.GetURLHandler)
+		r.Get("/api/user/urls", h.GetUserURLsHandler)
 		r.Post("/", h.SaveURLHandler)
 		r.Post("/api/shorten", h.SaveURLJSONHandler)
 	})
@@ -57,20 +65,45 @@ func (h *handler) Register(router *chi.Mux) {
 
 func (h *handler) GetURLHandler(w http.ResponseWriter, r *http.Request) {
 	if urlID := chi.URLParam(r, "urlID"); urlID != "" {
-		id, err := strconv.Atoi(urlID)
-		if err != nil {
-			http.Error(w, "Invalid parameter", http.StatusBadRequest)
+		url, err := h.service.GetURLByID(urlID)
+		if errors.Is(repository.ItemNotFoundError, err) {
+			http.NotFound(w, r)
 			return
 		}
-		url := h.service.GetURLByID(id)
-		if url != "" {
-			http.Redirect(w, r, url, http.StatusTemporaryRedirect)
-			return
-		}
-		http.NotFound(w, r)
+		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 		return
 	}
 	http.Error(w, "Invalid parameter", http.StatusBadRequest)
+}
+
+type GetUserURLsResponse struct {
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
+}
+
+func NewGetUserURLsResponse(shortURL, originalURL string) *GetUserURLsResponse {
+	return &GetUserURLsResponse{ShortURL: shortURL, OriginalURL: originalURL}
+}
+
+func (h *handler) GetUserURLsHandler(w http.ResponseWriter, r *http.Request) {
+	ownerID := r.Context().Value(middleware.OwnerID).(string)
+	shortenedURLSInfos, err := h.service.GetURLsByOwnerID(ownerID)
+	if err != nil {
+		http.Error(w, "", http.StatusInternalServerError)
+	}
+
+	response := make([]GetUserURLsResponse, 0, len(shortenedURLSInfos))
+
+	for _, info := range shortenedURLSInfos {
+		response = append(response, *NewGetUserURLsResponse(h.createShortURLFromID(info.GetID()), info.GetOriginalURL()))
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Error while generating response", http.StatusInternalServerError)
+	}
+	return
 }
 
 func (h *handler) SaveURLHandler(w http.ResponseWriter, r *http.Request) {
@@ -85,19 +118,31 @@ func (h *handler) SaveURLHandler(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(reader)
 		if err != nil {
 			http.Error(w, "Error while body reading", http.StatusInternalServerError)
-		} else {
-			urlID := h.service.AddNewURL(string(body))
-			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-			w.WriteHeader(201)
-			_, err := w.Write([]byte(fmt.Sprintf("%s/%d", h.address, urlID)))
-			if err != nil {
-				http.Error(w, "Error while generating response", http.StatusInternalServerError)
-			}
+			return
+		}
+		urlString := string(body)
+		_, err = url.ParseRequestURI(urlString)
+		if err != nil {
+			http.Error(w, "Passed value is not valid URL", http.StatusBadRequest)
 			return
 		}
 
+		ownerID := r.Context().Value(middleware.OwnerID).(string)
+		urlID, _ := h.service.AddNewURL(*entity.NewUnstoredShortenedURLInfo(ownerID, urlString))
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.WriteHeader(201)
+		_, err = w.Write([]byte(h.createShortURLFromID(urlID)))
+		if err != nil {
+			http.Error(w, "Error while generating response", http.StatusInternalServerError)
+		}
+		return
+
 	}
 	http.Error(w, "Invalid Content-Type: "+r.Header.Get("Content-Type"), http.StatusBadRequest)
+}
+
+func (h *handler) createShortURLFromID(shortURLID string) string {
+	return fmt.Sprintf("%s/%s", h.address, shortURLID)
 }
 
 func (h *handler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) {
@@ -115,11 +160,16 @@ func (h *handler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
-		urlID := h.service.AddNewURL(body.URL)
+		_, err = url.ParseRequestURI(body.URL)
+		if err != nil {
+			http.Error(w, "Passed value is not valid URL", http.StatusBadRequest)
+			return
+		}
+		ownerID := r.Context().Value(middleware.OwnerID).(string)
+		urlID, _ := h.service.AddNewURL(*entity.NewUnstoredShortenedURLInfo(ownerID, body.URL))
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(201)
-		responseURL := fmt.Sprintf("%s/%d", h.address, urlID)
-		if err := json.NewEncoder(w).Encode(&SaveURLResponse{Result: responseURL}); err != nil {
+		if err := json.NewEncoder(w).Encode(&SaveURLResponse{Result: h.createShortURLFromID(urlID)}); err != nil {
 			http.Error(w, "Error while generating response", http.StatusInternalServerError)
 		}
 		return

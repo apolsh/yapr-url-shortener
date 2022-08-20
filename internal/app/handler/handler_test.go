@@ -4,9 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/apolsh/yapr-url-shortener/internal/app/config"
+	"github.com/apolsh/yapr-url-shortener/internal/app/crypto"
 	"github.com/apolsh/yapr-url-shortener/internal/app/mock"
-	"github.com/apolsh/yapr-url-shortener/internal/app/service"
+	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
+	"github.com/apolsh/yapr-url-shortener/internal/app/service/impl"
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -97,13 +100,13 @@ func getConfig() config.Config {
 }
 
 func TestHandler_GetURLHandler(t *testing.T) {
-	alreadyStoredURLs := make(map[int]string)
-	alreadyStoredURLs[0] = testURL1
-	alreadyStoredURLs[1] = testURL2
+	alreadyStoredURLs := make(map[string]entity.ShortenedURLInfo)
+	alreadyStoredURLs["0"] = *entity.NewShortenedURLInfo("0", "owner1", "url1")
+	alreadyStoredURLs["1"] = *entity.NewShortenedURLInfo("1", "owner2", "url2")
 	cfg := getConfig()
 
 	repositoryMock := mock.NewURLRepositoryMock(alreadyStoredURLs)
-	h := NewURLShortenerHandler(cfg.BaseURL, service.NewURLShortenerService(repositoryMock))
+	h := NewURLShortenerHandler(cfg.BaseURL, impl.NewURLShortenerService(repositoryMock), crypto.NewCCMAES256CryptoProvider(uuid.New().String()))
 	r := chi.NewRouter()
 	h.Register(r)
 
@@ -144,7 +147,7 @@ func TestHandler_GetURLHandler(t *testing.T) {
 
 func TestHandler_SaveURLHandler(t *testing.T) {
 	cfg := getConfig()
-	h := NewURLShortenerHandler(cfg.BaseURL, service.NewURLShortenerService(mock.NewURLRepositoryMock(make(map[int]string))))
+	h := NewURLShortenerHandler(cfg.BaseURL, impl.NewURLShortenerService(mock.NewURLRepositoryMock(make(map[int]string))), crypto.NewCCMAES256CryptoProvider(uuid.New().String()))
 	r := chi.NewRouter()
 	h.Register(r)
 
@@ -176,7 +179,7 @@ func TestHandler_SaveURLHandler(t *testing.T) {
 
 func TestHandler_SaveURLJSONHandler(t *testing.T) {
 	cfg := getConfig()
-	h := NewURLShortenerHandler(cfg.BaseURL, service.NewURLShortenerService(mock.NewURLRepositoryMock(make(map[int]string))))
+	h := NewURLShortenerHandler(cfg.BaseURL, impl.NewURLShortenerService(mock.NewURLRepositoryMock(make(map[int]string))), crypto.NewCCMAES256CryptoProvider(uuid.New().String()))
 	r := chi.NewRouter()
 	h.Register(r)
 
@@ -215,7 +218,7 @@ func TestHandler_SaveURLJSONHandler(t *testing.T) {
 
 func TestHandler_CommonTests(t *testing.T) {
 	cfg := getConfig()
-	h := NewURLShortenerHandler(cfg.BaseURL, service.NewURLShortenerService(mock.NewURLRepositoryMock(make(map[int]string))))
+	h := NewURLShortenerHandler(cfg.BaseURL, impl.NewURLShortenerService(mock.NewURLRepositoryMock(make(map[int]string))), crypto.NewCCMAES256CryptoProvider(uuid.New().String()))
 	r := chi.NewRouter()
 	h.Register(r)
 

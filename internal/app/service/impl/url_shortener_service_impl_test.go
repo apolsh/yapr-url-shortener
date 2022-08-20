@@ -1,11 +1,12 @@
-package repository
+package impl
 
 import (
+	"github.com/apolsh/yapr-url-shortener/internal/app/mock"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func TestURLRepositoryInMemoryImpl_GetByID(t *testing.T) {
+func TestURLShortenerService_AddNewURL(t *testing.T) {
 	tests := []struct {
 		name           string
 		repositoryMock map[int]string
@@ -33,19 +34,19 @@ func TestURLRepositoryInMemoryImpl_GetByID(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		repository := &URLRepositoryInMemory{Storage: test.repositoryMock}
+		service := &URLShortenerServiceImpl{repository: &mock.URLRepositoryMock{Storage: test.repositoryMock}}
 
 		t.Run(test.name, func(t *testing.T) {
 			resultMap := make(map[int]string)
 			for _, item := range test.urls {
-				resultMap[repository.Save(item)] = item
+				resultMap[service.AddNewURL()] = item
 			}
 			assert.Equal(t, test.expectedIds, resultMap)
 		})
 	}
 }
 
-func TestURLRepositoryInMemoryImpl_Save(t *testing.T) {
+func TestURLShortenerService_GetURLByID(t *testing.T) {
 	tests := []struct {
 		name           string
 		repositoryMock map[int]string
@@ -73,12 +74,12 @@ func TestURLRepositoryInMemoryImpl_Save(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		repository := &URLRepositoryInMemory{Storage: test.repositoryMock}
+		service := &URLShortenerServiceImpl{repository: &mock.URLRepositoryMock{Storage: test.repositoryMock}}
 
 		t.Run(test.name, func(t *testing.T) {
 			resultMap := make(map[int]string)
 			for _, item := range test.ids {
-				resultMap[item] = repository.GetByID(item)
+				resultMap[item], _ = service.GetURLByID(item)
 			}
 			assert.Equal(t, test.expectedIds, resultMap)
 		})
