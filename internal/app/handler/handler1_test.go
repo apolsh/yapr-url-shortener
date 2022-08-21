@@ -111,5 +111,6 @@ func getRedirectResponse(response *http.Response) *http.Response {
 		preTempResponse = tempResponse
 		tempResponse = tempResponse.Request.Response
 	}
+	defer preTempResponse.Body.Close()
 	return preTempResponse
 }
