@@ -1,10 +1,9 @@
-package inmemory
+package repository
 
 import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
-	"github.com/apolsh/yapr-url-shortener/internal/app/repository"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
 	"github.com/rs/xid"
 	"io"
@@ -66,7 +65,7 @@ type URLRepositoryInMemory struct {
 	backupStorage backupStorage
 }
 
-func NewURLRepositoryInMemory(fileStorage string) repository.URLRepository {
+func NewURLRepositoryInMemory(fileStorage string) URLRepository {
 	storage := make(map[string]entity.ShortenedURLInfo)
 	if fileStorage != "" {
 		backupStorage, err := NewFileBackup(fileStorage)
@@ -104,7 +103,7 @@ func (r *URLRepositoryInMemory) Save(shortenedURLEntity entity.ShortenedURLInfo)
 func (r URLRepositoryInMemory) GetByID(id string) (entity.ShortenedURLInfo, error) {
 	s, isFound := r.Storage[id]
 	if !isFound {
-		return s, repository.ErrorItemNotFound
+		return s, ErrorItemNotFound
 	}
 	return s, nil
 }

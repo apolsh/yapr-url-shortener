@@ -1,16 +1,15 @@
-package impl
+package service
 
 import (
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
-	"github.com/apolsh/yapr-url-shortener/internal/app/service"
 )
 
 type URLShortenerServiceImpl struct {
 	repository repository.URLRepository
 }
 
-func NewURLShortenerService(repo repository.URLRepository) service.URLShortenerService {
+func NewURLShortenerService(repo repository.URLRepository) URLShortenerService {
 	return &URLShortenerServiceImpl{repository: repo}
 }
 
