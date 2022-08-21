@@ -8,7 +8,7 @@ import (
 type Config struct {
 	ServerAddress   string `env:"SERVER_ADDRESS" envDefault:"localhost:8080"`
 	BaseURL         string `env:"BASE_URL" envDefault:"http://localhost:8080"`
-	FileStoragePath string `env:"FILE_STORAGE_PATH" envDefault:"/home/alphabeta/yandex/praktikum/go-advanced/yapr-url-shortener/testbackupfile"`
+	FileStoragePath string `env:"FILE_STORAGE_PATH"`
 	AuthSecretKey   string `env:"AUTH_SECRET_KEY" envDefault:"very_secret_key"`
 }
 
