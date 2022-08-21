@@ -55,6 +55,8 @@ func (h *handler) Register(router *chi.Mux) {
 	})
 }
 
+//test
+
 func (h *handler) GetURLHandler(w http.ResponseWriter, r *http.Request) {
 	if urlID := chi.URLParam(r, "urlID"); urlID != "" {
 		id, err := strconv.Atoi(urlID)
