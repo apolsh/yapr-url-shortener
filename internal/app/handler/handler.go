@@ -56,11 +56,22 @@ func (h *handler) Register(router *chi.Mux) {
 	router.Use(middleware.CompressResponse)
 	router.Use(middleware.AuthMiddleware(h.authCryptoProvider))
 	router.Route("/", func(r chi.Router) {
+		r.Get("/ping", h.PingDB)
 		r.Get("/{urlID}", h.GetURLHandler)
 		r.Get("/api/user/urls", h.GetUserURLsHandler)
 		r.Post("/", h.SaveURLHandler)
 		r.Post("/api/shorten", h.SaveURLJSONHandler)
+
 	})
+}
+
+func (h *handler) PingDB(w http.ResponseWriter, r *http.Request) {
+	ok := h.service.PingDB()
+	if ok {
+		w.WriteHeader(200)
+	} else {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
 }
 
 func (h *handler) GetURLHandler(w http.ResponseWriter, r *http.Request) {

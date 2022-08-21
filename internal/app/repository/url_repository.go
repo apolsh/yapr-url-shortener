@@ -11,6 +11,10 @@ type URLRepository interface {
 	GetByID(id string) (entity.ShortenedURLInfo, error)
 
 	GetAllByOwner(owner string) ([]entity.ShortenedURLInfo, error)
+
+	Close()
+
+	Ping() bool
 }
 
 var ErrorItemNotFound = errors.New("item not found")

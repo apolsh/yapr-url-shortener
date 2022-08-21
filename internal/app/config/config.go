@@ -10,6 +10,7 @@ type Config struct {
 	BaseURL         string `env:"BASE_URL" envDefault:"http://localhost:8080"`
 	FileStoragePath string `env:"FILE_STORAGE_PATH"`
 	AuthSecretKey   string `env:"AUTH_SECRET_KEY" envDefault:"very_secret_key"`
+	DatabaseDSN     string `env:"DATABASE_DSN" envDefault:"postgresql://yaprurlshortener:yaPR_ttuss@localhost:5432/yapr-url-shortener"`
 }
 
 func Load() Config {
@@ -21,10 +22,12 @@ func Load() Config {
 	var addressFlagValue string
 	var baseURLFlagValue string
 	var fileStoragePathFlagValue string
+	var databaseDSN string
 
 	flag.StringVar(&addressFlagValue, "a", "", "HTTP server start address")
 	flag.StringVar(&baseURLFlagValue, "b", "", "base address of the resulting shortened URL")
 	flag.StringVar(&fileStoragePathFlagValue, "f", "", "path to file with abbreviated URLs")
+	flag.StringVar(&databaseDSN, "d", "", "database DSN")
 
 	flag.Parse()
 
@@ -36,6 +39,9 @@ func Load() Config {
 	}
 	if fileStoragePathFlagValue != "" {
 		cfg.FileStoragePath = fileStoragePathFlagValue
+	}
+	if databaseDSN != "" {
+		cfg.DatabaseDSN = databaseDSN
 	}
 
 	return cfg

@@ -25,3 +25,7 @@ func (r URLShortenerServiceImpl) GetURLByID(id string) (string, error) {
 func (r URLShortenerServiceImpl) GetURLsByOwnerID(ownerID string) ([]entity.ShortenedURLInfo, error) {
 	return r.repository.GetAllByOwner(ownerID)
 }
+
+func (r URLShortenerServiceImpl) PingDB() bool {
+	return r.repository.Ping()
+}

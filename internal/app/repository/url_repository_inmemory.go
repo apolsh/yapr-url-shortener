@@ -118,6 +118,14 @@ func (r URLRepositoryInMemory) GetAllByOwner(owner string) ([]entity.ShortenedUR
 	return urls, nil
 }
 
+func (r *URLRepositoryInMemory) Close() {
+
+}
+
+func (r *URLRepositoryInMemory) Ping() bool {
+	return true
+}
+
 func (r *URLRepositoryInMemory) nextID() string {
 	return xid.New().String()
 	//sum256 := sha256.Sum256([]byte(url.GetOriginalURL() + url.GetOwner()))

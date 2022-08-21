@@ -23,7 +23,14 @@ func main() {
 	router.Use(middleware.Recoverer)
 
 	authCryptoProvider := crypto.NewCCMAES256CryptoProvider(cfg.AuthSecretKey)
-	urlShortenerStorage := repository.NewURLRepositoryInMemory(cfg.FileStoragePath)
+	var urlShortenerStorage repository.URLRepository
+	if cfg.DatabaseDSN != "" {
+		urlShortenerStorage = repository.NewURLRepositoryPG(cfg.DatabaseDSN)
+	} else {
+		urlShortenerStorage = repository.NewURLRepositoryInMemory(cfg.FileStoragePath)
+	}
+	defer urlShortenerStorage.Close()
+
 	urlShortenerService := service.NewURLShortenerService(urlShortenerStorage)
 	chiHandler := handler.NewURLShortenerHandler(cfg.BaseURL, urlShortenerService, authCryptoProvider)
 	chiHandler.Register(router)
