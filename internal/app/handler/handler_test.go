@@ -2,7 +2,7 @@ package handler
 
 import (
 	"encoding/json"
-	"github.com/apolsh/yapr-url-shortener/internal/app/mock"
+	"github.com/apolsh/yapr-url-shortener/internal/app/mocks"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
 	"github.com/go-chi/chi/v5"
@@ -27,7 +27,7 @@ type HandlerTestSuite struct {
 	suite.Suite
 	ctrl           *gomock.Controller
 	server         *httptest.Server
-	urlServiceMock *mock.MockURLShortenerService
+	urlServiceMock *mocks.MockURLShortenerService
 }
 
 func (suite *HandlerTestSuite) SetupTest() {
@@ -36,8 +36,8 @@ func (suite *HandlerTestSuite) SetupTest() {
 }
 
 func (suite *HandlerTestSuite) BeforeTest(suiteName, testName string) {
-	s := mock.NewMockURLShortenerService(suite.ctrl)
-	p := mock.NewMockProvider(suite.ctrl)
+	s := mocks.NewMockURLShortenerService(suite.ctrl)
+	p := mocks.NewMockProvider(suite.ctrl)
 	handler := NewURLShortenerHandler("http://localhost:8080", s, p)
 	r := chi.NewRouter()
 	handler.Register(r)
