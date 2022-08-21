@@ -52,6 +52,7 @@ func (suite *HandlerTestSuite) TestSaveURLHandlerValidRequest() {
 	suite.urlServiceMock.EXPECT().AddNewURL(gomock.Any()).Return(id, nil)
 
 	response, shortenedURL := executeSaveURL(suite.T(), suite.server, dummyURL1)
+	defer response.Body.Close()
 
 	assert.Equal(suite.T(), 201, response.StatusCode)
 	assert.Equal(suite.T(), "http://localhost:8080/"+id, shortenedURL)
@@ -59,6 +60,7 @@ func (suite *HandlerTestSuite) TestSaveURLHandlerValidRequest() {
 
 func (suite *HandlerTestSuite) TestSaveURLHandlerEmptyBody() {
 	response, _ := executeSaveURL(suite.T(), suite.server, "")
+	defer response.Body.Close()
 
 	assert.Equal(suite.T(), 400, response.StatusCode)
 }
@@ -68,6 +70,7 @@ func (suite *HandlerTestSuite) TestSaveURLJSONHandlerValidRequest() {
 	suite.urlServiceMock.EXPECT().AddNewURL(gomock.Any()).Return(id, nil)
 
 	response, jsonResult := executeSaveURLJSON(suite.T(), suite.server, dummyURL1)
+	defer response.Body.Close()
 
 	assert.Equal(suite.T(), 201, response.StatusCode)
 	assert.Equal(suite.T(), "http://localhost:8080/"+id, jsonResult.Result)
@@ -75,6 +78,7 @@ func (suite *HandlerTestSuite) TestSaveURLJSONHandlerValidRequest() {
 
 func (suite *HandlerTestSuite) TestSaveURLJSONHandlerEmptyBody() {
 	response, _ := executeSaveURLJSON(suite.T(), suite.server, "")
+	defer response.Body.Close()
 
 	assert.Equal(suite.T(), 400, response.StatusCode)
 }
@@ -170,6 +174,7 @@ func executeSaveURLJSON(t *testing.T, server *httptest.Server, urlToSave string)
 
 	var parsedBody SaveURLResponse
 	err = json.Unmarshal(body, &parsedBody)
+	require.NoError(t, err)
 
 	return response, parsedBody
 }
