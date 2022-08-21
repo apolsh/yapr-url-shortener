@@ -12,7 +12,9 @@ type URLRepository interface {
 
 	SaveBatch(owner string, batch []dto.ShortenInBatchRequestItem) ([]*dto.ShortenInBatchResponseItem, error)
 
-	GetByID(id string) (entity.ShortenedURLInfo, error)
+	GetByID(id string) (*entity.ShortenedURLInfo, error)
+
+	GetByOriginalURL(url string) (*entity.ShortenedURLInfo, error)
 
 	GetAllByOwner(owner string) ([]entity.ShortenedURLInfo, error)
 
@@ -22,6 +24,8 @@ type URLRepository interface {
 }
 
 var ErrorItemNotFound = errors.New("item not found")
+
+var ErrorURLAlreadyStored = errors.New("provided URL is already stored")
 
 func nextID() string {
 	return xid.New().String()

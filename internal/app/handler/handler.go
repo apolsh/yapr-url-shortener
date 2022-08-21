@@ -179,10 +179,23 @@ func (h *handler) SaveURLHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		var urlID string
+		statusCode := 201
 		ownerID := r.Context().Value(middleware.OwnerID).(string)
-		urlID, _ := h.service.AddNewURL(*entity.NewUnstoredShortenedURLInfo(ownerID, urlString))
+		urlID, err = h.service.AddNewURL(*entity.NewUnstoredShortenedURLInfo(ownerID, urlString))
+		if err != nil {
+			if errors.Is(err, repository.ErrorURLAlreadyStored) {
+				info, err := h.service.GetByOriginalURL(urlString)
+				urlID = info.GetID()
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				statusCode = 409
+			}
+		}
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.WriteHeader(201)
+		w.WriteHeader(statusCode)
 		_, err = w.Write([]byte(h.createShortURLFromID(urlID)))
 		if err != nil {
 			http.Error(w, "Error while generating response", http.StatusInternalServerError)
@@ -218,9 +231,21 @@ func (h *handler) SaveURLJSONHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		ownerID := r.Context().Value(middleware.OwnerID).(string)
-		urlID, _ := h.service.AddNewURL(*entity.NewUnstoredShortenedURLInfo(ownerID, body.URL))
+		statusCode := 201
+		urlID, err := h.service.AddNewURL(*entity.NewUnstoredShortenedURLInfo(ownerID, body.URL))
+		if err != nil {
+			if errors.Is(err, repository.ErrorURLAlreadyStored) {
+				info, err := h.service.GetByOriginalURL(body.URL)
+				urlID = info.GetID()
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				statusCode = 409
+			}
+		}
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(201)
+		w.WriteHeader(statusCode)
 		if err := json.NewEncoder(w).Encode(&SaveURLResponse{Result: h.createShortURLFromID(urlID)}); err != nil {
 			http.Error(w, "Error while generating response", http.StatusInternalServerError)
 		}

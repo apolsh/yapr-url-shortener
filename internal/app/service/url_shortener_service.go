@@ -12,6 +12,8 @@ type URLShortenerService interface {
 
 	GetURLByID(id string) (string, error)
 
+	GetByOriginalURL(url string) (*entity.ShortenedURLInfo, error)
+
 	GetURLsByOwnerID(ownerID string) ([]entity.ShortenedURLInfo, error)
 
 	PingDB() bool

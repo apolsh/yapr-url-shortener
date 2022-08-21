@@ -3,6 +3,7 @@ package repository
 import (
 	"encoding/gob"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/dto"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
@@ -88,16 +89,20 @@ func NewURLRepositoryInMemory(fileStorage string) URLRepository {
 }
 
 func (r *URLRepositoryInMemory) Save(shortenedURLEntity entity.ShortenedURLInfo) (string, error) {
-	id := nextID()
-	shortenedURLEntity.SetID(id)
-	if r.backupStorage != nil {
-		err := r.backupStorage.write(&shortenedURLEntity)
-		if err != nil {
-			return "", err
+	_, err := r.GetByOriginalURL(shortenedURLEntity.GetOriginalURL())
+	if err != nil && errors.Is(err, ErrorItemNotFound) {
+		id := nextID()
+		shortenedURLEntity.SetID(id)
+		if r.backupStorage != nil {
+			err := r.backupStorage.write(&shortenedURLEntity)
+			if err != nil {
+				return "", err
+			}
 		}
+		r.Storage[id] = shortenedURLEntity
+		return id, nil
 	}
-	r.Storage[id] = shortenedURLEntity
-	return id, nil
+	return "", err
 }
 
 func (r *URLRepositoryInMemory) SaveBatch(owner string, batch []dto.ShortenInBatchRequestItem) ([]*dto.ShortenInBatchResponseItem, error) {
@@ -111,12 +116,21 @@ func (r *URLRepositoryInMemory) SaveBatch(owner string, batch []dto.ShortenInBat
 	return response, nil
 }
 
-func (r URLRepositoryInMemory) GetByID(id string) (entity.ShortenedURLInfo, error) {
+func (r URLRepositoryInMemory) GetByID(id string) (*entity.ShortenedURLInfo, error) {
 	s, isFound := r.Storage[id]
 	if !isFound {
-		return s, ErrorItemNotFound
+		return nil, ErrorItemNotFound
 	}
-	return s, nil
+	return &s, nil
+}
+
+func (r URLRepositoryInMemory) GetByOriginalURL(url string) (*entity.ShortenedURLInfo, error) {
+	for _, value := range r.Storage {
+		if value.OriginalURL == url {
+			return &value, nil
+		}
+	}
+	return nil, ErrorItemNotFound
 }
 
 func (r URLRepositoryInMemory) GetAllByOwner(owner string) ([]entity.ShortenedURLInfo, error) {

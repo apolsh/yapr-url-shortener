@@ -23,6 +23,10 @@ func (r URLShortenerServiceImpl) GetURLByID(id string) (string, error) {
 	return byID.GetOriginalURL(), err
 }
 
+func (r URLShortenerServiceImpl) GetByOriginalURL(originalURL string) (*entity.ShortenedURLInfo, error) {
+	return r.repository.GetByOriginalURL(originalURL)
+}
+
 func (r URLShortenerServiceImpl) GetURLsByOwnerID(ownerID string) ([]entity.ShortenedURLInfo, error) {
 	return r.repository.GetAllByOwner(ownerID)
 }
