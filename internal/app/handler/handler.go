@@ -8,6 +8,7 @@ import (
 	"github.com/apolsh/yapr-url-shortener/internal/app/crypto"
 	"github.com/apolsh/yapr-url-shortener/internal/app/middleware"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository"
+	"github.com/apolsh/yapr-url-shortener/internal/app/repository/dto"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
 	"github.com/apolsh/yapr-url-shortener/internal/app/service"
 	"github.com/go-chi/chi/v5"
@@ -58,11 +59,47 @@ func (h *handler) Register(router *chi.Mux) {
 	router.Route("/", func(r chi.Router) {
 		r.Get("/ping", h.PingDB)
 		r.Get("/{urlID}", h.GetURLHandler)
+		r.Post("/api/shorten/batch", h.PostShortenURLsInBatch)
 		r.Get("/api/user/urls", h.GetUserURLsHandler)
 		r.Post("/", h.SaveURLHandler)
 		r.Post("/api/shorten", h.SaveURLJSONHandler)
 
 	})
+}
+
+func (h *handler) PostShortenURLsInBatch(w http.ResponseWriter, r *http.Request) {
+	if isValidContentType(r.Header.Get("Content-Type"), "application/json", "application/x-gzip") {
+		reader, err := getBodyReader(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer reader.Close()
+
+		var body []dto.ShortenInBatchRequestItem
+
+		if err := json.NewDecoder(reader).Decode(&body); err != nil {
+			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			return
+		}
+		ownerID := r.Context().Value(middleware.OwnerID).(string)
+		batch, err := h.service.AddNewURLsInBatch(ownerID, body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		for _, item := range batch {
+			item.ShortURL = h.createShortURLFromID(item.ShortURL)
+		}
+
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(201)
+		if err := json.NewEncoder(w).Encode(batch); err != nil {
+			http.Error(w, "Error while generating response", http.StatusInternalServerError)
+		}
+		return
+	}
+	http.Error(w, "Invalid Content-Type: "+r.Header.Get("Content-Type"), http.StatusBadRequest)
 }
 
 func (h *handler) PingDB(w http.ResponseWriter, r *http.Request) {

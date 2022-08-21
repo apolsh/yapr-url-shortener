@@ -2,11 +2,14 @@ package repository
 
 import (
 	"context"
+	"github.com/apolsh/yapr-url-shortener/internal/app/repository/dto"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"time"
 )
+
+const preparedSaveBatchStatement = "SAVE_BATCH_STATEMENT"
 
 type URLRepositoryPG struct {
 	DB *pgxpool.Pool
@@ -36,6 +39,34 @@ func (repo URLRepositoryPG) Save(info entity.ShortenedURLInfo) (string, error) {
 		return "", err
 	}
 	return info.GetID(), nil
+}
+
+func (repo *URLRepositoryPG) SaveBatch(owner string, batch []dto.ShortenInBatchRequestItem) ([]*dto.ShortenInBatchResponseItem, error) {
+	ctx := context.Background()
+	tx, err := repo.DB.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
+
+	response := make([]*dto.ShortenInBatchResponseItem, 0, len(batch))
+	var id string
+	for _, requestItem := range batch {
+		id = nextID()
+		responseItem := &dto.ShortenInBatchResponseItem{CorrelationID: requestItem.CorrelationID, ShortURL: id}
+		_, err := tx.Exec(ctx, preparedSaveBatchStatement, id, requestItem.OriginalURL, owner)
+		if err != nil {
+			return nil, err
+		}
+		response = append(response, responseItem)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+	return response, nil
 }
 
 func (repo URLRepositoryPG) GetByID(id string) (entity.ShortenedURLInfo, error) {
@@ -108,6 +139,10 @@ func setupTable(conn *pgxpool.Pool) error {
 		return err
 	}
 	_, err = tx.Exec(ctx, createIndexQ)
+	if err != nil {
+		return err
+	}
+	_, err = tx.Prepare(ctx, preparedSaveBatchStatement, "INSERT INTO shortened_urls (id, original_url, owner) VALUES ($1, $2, $3)")
 	if err != nil {
 		return err
 	}

@@ -2,6 +2,7 @@ package service
 
 import (
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository"
+	"github.com/apolsh/yapr-url-shortener/internal/app/repository/dto"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
 )
 
@@ -28,4 +29,8 @@ func (r URLShortenerServiceImpl) GetURLsByOwnerID(ownerID string) ([]entity.Shor
 
 func (r URLShortenerServiceImpl) PingDB() bool {
 	return r.repository.Ping()
+}
+
+func (r URLShortenerServiceImpl) AddNewURLsInBatch(owner string, batch []dto.ShortenInBatchRequestItem) ([]*dto.ShortenInBatchResponseItem, error) {
+	return r.repository.SaveBatch(owner, batch)
 }

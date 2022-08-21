@@ -4,6 +4,7 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
+	"github.com/apolsh/yapr-url-shortener/internal/app/repository/dto"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
 	"io"
 	"os"
@@ -97,6 +98,17 @@ func (r *URLRepositoryInMemory) Save(shortenedURLEntity entity.ShortenedURLInfo)
 	}
 	r.Storage[id] = shortenedURLEntity
 	return id, nil
+}
+
+func (r *URLRepositoryInMemory) SaveBatch(owner string, batch []dto.ShortenInBatchRequestItem) ([]*dto.ShortenInBatchResponseItem, error) {
+	response := make([]*dto.ShortenInBatchResponseItem, 0, len(batch))
+	for _, item := range batch {
+		info := entity.NewUnstoredShortenedURLInfo(owner, item.OriginalURL)
+		id, _ := r.Save(*info)
+		response = append(response, &dto.ShortenInBatchResponseItem{CorrelationID: item.CorrelationID, ShortURL: id})
+	}
+
+	return response, nil
 }
 
 func (r URLRepositoryInMemory) GetByID(id string) (entity.ShortenedURLInfo, error) {
