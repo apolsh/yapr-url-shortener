@@ -3,6 +3,7 @@ package repository
 import (
 	"errors"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
+	"github.com/rs/xid"
 )
 
 type URLRepository interface {
@@ -18,3 +19,7 @@ type URLRepository interface {
 }
 
 var ErrorItemNotFound = errors.New("item not found")
+
+func nextID() string {
+	return xid.New().String()
+}

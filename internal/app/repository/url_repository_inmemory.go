@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
-	"github.com/rs/xid"
 	"io"
 	"os"
 )
@@ -88,7 +87,7 @@ func NewURLRepositoryInMemory(fileStorage string) URLRepository {
 }
 
 func (r *URLRepositoryInMemory) Save(shortenedURLEntity entity.ShortenedURLInfo) (string, error) {
-	id := r.nextID()
+	id := nextID()
 	shortenedURLEntity.SetID(id)
 	if r.backupStorage != nil {
 		err := r.backupStorage.write(&shortenedURLEntity)
@@ -124,10 +123,4 @@ func (r *URLRepositoryInMemory) Close() {
 
 func (r *URLRepositoryInMemory) Ping() bool {
 	return true
-}
-
-func (r *URLRepositoryInMemory) nextID() string {
-	return xid.New().String()
-	//sum256 := sha256.Sum256([]byte(url.GetOriginalURL() + url.GetOwner()))
-	//return hex.EncodeToString(sum256[:])
 }
