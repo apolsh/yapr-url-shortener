@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"log"
 	"time"
 )
 
@@ -155,7 +156,7 @@ func setupTable(conn *pgxpool.Pool) error {
 						owner        uuid        not null
 					)`
 	createIDIndexQ := "create unique index if not exists shortened_urls_id_uindex on shortened_urls (id)"
-	//createOriginalURLIndexQ := "create unique index shortened_urls_original_url_uindex on shortened_urls (original_url)"
+	createOriginalURLIndexQ := "create unique index shortened_urls_original_url_uindex on shortened_urls (original_url)"
 	_, err = tx.Exec(ctx, createTableQ)
 	if err != nil {
 		return err
@@ -164,10 +165,13 @@ func setupTable(conn *pgxpool.Pool) error {
 	if err != nil {
 		return err
 	}
-	//_, err = tx.Exec(ctx, createOriginalURLIndexQ)
-	//if err != nil {
-	//	return err
-	//}
+	log.Println("execute createOriginalURLIndexQ")
+	_, err = tx.Exec(ctx, createOriginalURLIndexQ)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	log.Println("done with createOriginalURLIndexQ")
 	_, err = tx.Prepare(ctx, preparedSaveBatchStatement, "INSERT INTO shortened_urls (id, original_url, owner) VALUES ($1, $2, $3)")
 	if err != nil {
 		return err
