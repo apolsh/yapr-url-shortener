@@ -29,23 +29,10 @@ func (f fileBackup) read() (*entity.ShortenedURLInfo, error) {
 		return nil, err
 	}
 	return event, nil
-	//
-	//if !f.scanner.Scan() {
-	//	return "", f.scanner.Err()
-	//}
-	//url := f.scanner.Text()
-	//return url, nil
 }
 
 func (f fileBackup) write(url *entity.ShortenedURLInfo) error {
 	return f.encoder.Encode(&url)
-	//if _, err := f.writer.Write([]byte(url)); err != nil {
-	//	return err
-	//}
-	//if err := f.writer.WriteByte('\n'); err != nil {
-	//	return err
-	//}
-	//return f.writer.Flush()
 }
 
 func NewFileBackup(filename string) (*fileBackup, error) {

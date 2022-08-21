@@ -22,7 +22,7 @@ func main() {
 	router.Use(middleware.Logger)
 	router.Use(middleware.Recoverer)
 
-	authCryptoProvider := crypto.NewCCMAES256CryptoProvider(cfg.AuthSecretKey)
+	authCryptoProvider := crypto.NewAESCryptoProvider(cfg.AuthSecretKey)
 	var urlShortenerStorage repository.URLRepository
 	if cfg.DatabaseDSN != "" {
 		urlShortenerStorage = repository.NewURLRepositoryPG(cfg.DatabaseDSN)
