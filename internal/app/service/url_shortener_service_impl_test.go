@@ -1,5 +1,6 @@
 package service
 
+/*
 import (
 	"github.com/apolsh/yapr-url-shortener/internal/app/mock"
 	"github.com/stretchr/testify/assert"
@@ -85,3 +86,5 @@ func TestURLShortenerService_GetURLByID(t *testing.T) {
 		})
 	}
 }
+
+*/

@@ -92,6 +92,11 @@ func (h *handler) GetUserURLsHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusInternalServerError)
 	}
 
+	if len(shortenedURLSInfos) == 0 {
+		w.WriteHeader(204)
+		return
+	}
+
 	response := make([]GetUserURLsResponse, 0, len(shortenedURLSInfos))
 
 	for _, info := range shortenedURLSInfos {
