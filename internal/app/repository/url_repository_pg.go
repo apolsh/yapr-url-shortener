@@ -154,16 +154,16 @@ func setupTable(conn *pgxpool.Pool) error {
 						original_url varchar     not null,
 						owner        uuid        not null
 					)`
-	createIDIndexQ := "create unique index if not exists shortened_urls_id_uindex on shortened_urls (id)"
+	//createIDIndexQ := "create unique index if not exists shortened_urls_id_uindex on shortened_urls (id)"
 	createOriginalURLIndexQ := "create unique index index if not exists shortened_urls_original_url_uindex on shortened_urls (original_url)"
 	_, err = tx.Exec(ctx, createTableQ)
 	if err != nil {
 		return err
 	}
-	_, err = tx.Exec(ctx, createIDIndexQ)
-	if err != nil {
-		return err
-	}
+	//_, err = tx.Exec(ctx, createIDIndexQ)
+	//if err != nil {
+	//	return err
+	//}
 	_, err = tx.Exec(ctx, createOriginalURLIndexQ)
 	if err != nil {
 		return err
