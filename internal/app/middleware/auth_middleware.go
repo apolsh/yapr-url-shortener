@@ -9,9 +9,13 @@ import (
 )
 
 const authCookieName = "sessionId"
-const OwnerID = "userId"
+
+type ContextKey = string
+
+var OwnerID ContextKey = "userId"
 
 func generateNewUserIDCookie(uuid []byte, cryptoProvider crypto.Provider) *http.Cookie {
+
 	encryptedUserID := cryptoProvider.Encrypt(uuid)
 	return &http.Cookie{Name: authCookieName, Value: encryptedUserID}
 }

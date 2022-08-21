@@ -104,7 +104,7 @@ func (r *URLRepositoryInMemory) Save(shortenedURLEntity entity.ShortenedURLInfo)
 func (r URLRepositoryInMemory) GetByID(id string) (entity.ShortenedURLInfo, error) {
 	s, isFound := r.Storage[id]
 	if !isFound {
-		return s, repository.ItemNotFoundError
+		return s, repository.ErrorItemNotFound
 	}
 	return s, nil
 }

@@ -66,7 +66,7 @@ func (h *handler) Register(router *chi.Mux) {
 func (h *handler) GetURLHandler(w http.ResponseWriter, r *http.Request) {
 	if urlID := chi.URLParam(r, "urlID"); urlID != "" {
 		url, err := h.service.GetURLByID(urlID)
-		if errors.Is(repository.ItemNotFoundError, err) {
+		if errors.Is(repository.ErrorItemNotFound, err) {
 			http.NotFound(w, r)
 			return
 		}

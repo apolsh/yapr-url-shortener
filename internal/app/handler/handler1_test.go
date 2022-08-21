@@ -68,7 +68,7 @@ func (suite *HandlerTestSuite) TestGetURLHandlerWithExistingURL() {
 }
 
 func (suite *HandlerTestSuite) TestGetURLHandlerWithURLNotExist() {
-	suite.urlServiceMock.EXPECT().GetURLByID(gomock.Any()).Return("", repository.ItemNotFoundError)
+	suite.urlServiceMock.EXPECT().GetURLByID(gomock.Any()).Return("", repository.ErrorItemNotFound)
 
 	response, _ := executeGetURLRequest(suite.T(), suite.server, "/0")
 
