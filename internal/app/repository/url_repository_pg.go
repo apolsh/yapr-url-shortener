@@ -2,20 +2,17 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"time"
 )
 
 type URLRepositoryPG struct {
-	DB *pgx.Conn
+	DB *pgxpool.Pool
 }
 
 func NewURLRepositoryPG(databaseDSN string) URLRepository {
-	conn, err := pgx.Connect(context.Background(), databaseDSN)
-
-	//db, err := sql.Open("pgx", databaseDSN)
+	conn, err := pgxpool.Connect(context.Background(), databaseDSN)
 	if err != nil {
 		panic(err)
 	}
@@ -28,7 +25,15 @@ func (repo URLRepositoryPG) Save(shortenedInfo entity.ShortenedURLInfo) (string,
 }
 
 func (repo URLRepositoryPG) GetByID(id string) (entity.ShortenedURLInfo, error) {
-	return *entity.NewUnstoredShortenedURLInfo("", ""), nil
+	q := "SELECT id, original_url, owner FROM public.shortened_urls WHERE id=$1"
+	var info entity.ShortenedURLInfo
+	err := repo.DB.QueryRow(context.Background(), q, id).Scan(&info.ID, &info.OriginalURL, &info.Owner)
+
+	if err != nil {
+		return info, nil
+	}
+
+	return info, nil
 }
 
 func (repo URLRepositoryPG) GetAllByOwner(owner string) ([]entity.ShortenedURLInfo, error) {
@@ -46,8 +51,5 @@ func (repo *URLRepositoryPG) Ping() bool {
 }
 
 func (repo *URLRepositoryPG) Close() {
-	err := repo.DB.Close(context.Background())
-	if err != nil {
-		fmt.Println("failed to close postgres connection: ", err.Error())
-	}
+	repo.DB.Close()
 }
