@@ -73,7 +73,7 @@ func (h *handler) GetURLHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 		return
 	}
-	http.Error(w, "Invalid parameter", http.StatusBadRequest)
+	http.Error(w, "Invalid parameter", http.StatusMethodNotAllowed)
 }
 
 type GetUserURLsResponse struct {
