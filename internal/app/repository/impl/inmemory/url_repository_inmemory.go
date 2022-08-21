@@ -88,30 +88,30 @@ func NewURLRepositoryInMemory(fileStorage string) repository.URLRepository {
 	return &URLRepositoryInMemory{Storage: storage, backupStorage: nil}
 }
 
-func (repository *URLRepositoryInMemory) Save(shortenedURLEntity entity.ShortenedURLInfo) (string, error) {
-	id := repository.nextID()
+func (r *URLRepositoryInMemory) Save(shortenedURLEntity entity.ShortenedURLInfo) (string, error) {
+	id := r.nextID()
 	shortenedURLEntity.SetID(id)
-	if repository.backupStorage != nil {
-		err := repository.backupStorage.write(&shortenedURLEntity)
+	if r.backupStorage != nil {
+		err := r.backupStorage.write(&shortenedURLEntity)
 		if err != nil {
 			return "", err
 		}
 	}
-	repository.Storage[id] = shortenedURLEntity
+	r.Storage[id] = shortenedURLEntity
 	return id, nil
 }
 
-func (repository URLRepositoryInMemory) GetByID(id string) (entity.ShortenedURLInfo, error) {
-	s, isFound := repository.Storage[id]
+func (r URLRepositoryInMemory) GetByID(id string) (entity.ShortenedURLInfo, error) {
+	s, isFound := r.Storage[id]
 	if !isFound {
 		return s, repository.ItemNotFoundError
 	}
 	return s, nil
 }
 
-func (repository URLRepositoryInMemory) GetAllByOwner(owner string) ([]entity.ShortenedURLInfo, error) {
+func (r URLRepositoryInMemory) GetAllByOwner(owner string) ([]entity.ShortenedURLInfo, error) {
 	urls := make([]entity.ShortenedURLInfo, 0)
-	for _, value := range repository.Storage {
+	for _, value := range r.Storage {
 		if value.Owner == owner {
 			urls = append(urls, value)
 		}
@@ -119,7 +119,7 @@ func (repository URLRepositoryInMemory) GetAllByOwner(owner string) ([]entity.Sh
 	return urls, nil
 }
 
-func (repository *URLRepositoryInMemory) nextID() string {
+func (r *URLRepositoryInMemory) nextID() string {
 	return xid.New().String()
 	//sum256 := sha256.Sum256([]byte(url.GetOriginalURL() + url.GetOwner()))
 	//return hex.EncodeToString(sum256[:])
