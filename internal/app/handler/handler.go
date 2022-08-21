@@ -108,7 +108,6 @@ func (h *handler) GetUserURLsHandler(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, "Error while generating response", http.StatusInternalServerError)
 	}
-	return
 }
 
 func (h *handler) SaveURLHandler(w http.ResponseWriter, r *http.Request) {

@@ -62,6 +62,7 @@ func (suite *HandlerTestSuite) TestGetURLHandlerWithExistingURL() {
 
 	response, _ := executeGetURLRequest(suite.T(), suite.server, "/0")
 	redirectResponse := getRedirectResponse(response)
+	defer redirectResponse.Body.Close()
 
 	assert.Equal(suite.T(), http.StatusTemporaryRedirect, redirectResponse.StatusCode)
 	assert.Equal(suite.T(), dummyURL1, redirectResponse.Header.Get("Location"))
@@ -71,12 +72,14 @@ func (suite *HandlerTestSuite) TestGetURLHandlerWithURLNotExist() {
 	suite.urlServiceMock.EXPECT().GetURLByID(gomock.Any()).Return("", repository.ErrorItemNotFound)
 
 	response, _ := executeGetURLRequest(suite.T(), suite.server, "/0")
+	defer response.Body.Close()
 
 	assert.Equal(suite.T(), http.StatusNotFound, response.StatusCode)
 }
 
 func (suite *HandlerTestSuite) TestGetURLHandlerWithoutID() {
 	response, _ := executeGetURLRequest(suite.T(), suite.server, "/")
+	defer response.Body.Close()
 
 	assert.Equal(suite.T(), http.StatusMethodNotAllowed, response.StatusCode)
 }
@@ -111,6 +114,5 @@ func getRedirectResponse(response *http.Response) *http.Response {
 		preTempResponse = tempResponse
 		tempResponse = tempResponse.Request.Response
 	}
-	defer preTempResponse.Body.Close()
 	return preTempResponse
 }
