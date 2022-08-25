@@ -31,7 +31,7 @@ func NewURLRepositoryPG(databaseDSN string) URLRepository {
 	return &URLRepositoryPG{DB: conn}
 }
 
-func (repo URLRepositoryPG) Save(info entity.ShortenedURLInfo) (string, error) {
+func (repo URLRepositoryPG) Save(info *entity.ShortenedURLInfo) (string, error) {
 	info.ID = nextID()
 
 	q := "INSERT INTO shortened_urls (id, original_url, owner) VALUES ($1, $2, $3)"
@@ -50,7 +50,7 @@ func (repo URLRepositoryPG) Save(info entity.ShortenedURLInfo) (string, error) {
 	return info.GetID(), nil
 }
 
-func (repo *URLRepositoryPG) SaveBatch(owner string, batch []dto.ShortenInBatchRequestItem) ([]*dto.ShortenInBatchResponseItem, error) {
+func (repo *URLRepositoryPG) SaveBatch(owner string, batch []*dto.ShortenInBatchRequestItem) ([]*dto.ShortenInBatchResponseItem, error) {
 	ctx := context.Background()
 	tx, err := repo.DB.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
@@ -102,7 +102,7 @@ func (repo URLRepositoryPG) GetByOriginalURL(url string) (*entity.ShortenedURLIn
 	return &info, nil
 }
 
-func (repo URLRepositoryPG) GetAllByOwner(owner string) ([]entity.ShortenedURLInfo, error) {
+func (repo URLRepositoryPG) GetAllByOwner(owner string) ([]*entity.ShortenedURLInfo, error) {
 	q := "SELECT id, original_url, owner FROM shortened_urls WHERE owner=$1"
 
 	rows, err := repo.DB.Query(context.Background(), q, owner)
@@ -110,7 +110,7 @@ func (repo URLRepositoryPG) GetAllByOwner(owner string) ([]entity.ShortenedURLIn
 		return nil, err
 	}
 
-	infos := make([]entity.ShortenedURLInfo, 0)
+	infos := make([]*entity.ShortenedURLInfo, 0)
 
 	for rows.Next() {
 		var info entity.ShortenedURLInfo
@@ -118,7 +118,7 @@ func (repo URLRepositoryPG) GetAllByOwner(owner string) ([]entity.ShortenedURLIn
 		if err != nil {
 			return nil, err
 		}
-		infos = append(infos, info)
+		infos = append(infos, &info)
 	}
 
 	return infos, nil

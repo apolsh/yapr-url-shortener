@@ -37,7 +37,7 @@ func (suite *HandlerTestSuite) SetupTest() {
 
 func (suite *HandlerTestSuite) BeforeTest(suiteName, testName string) {
 	s := mocks.NewMockURLShortenerService(suite.ctrl)
-	p := mocks.NewMockProvider(suite.ctrl)
+	p := mocks.NewMockCryptographicProvider(suite.ctrl)
 	handler := NewURLShortenerHandler("http://localhost:8080", s, p)
 	r := chi.NewRouter()
 	handler.Register(r)
@@ -85,7 +85,7 @@ func (suite *HandlerTestSuite) TestSaveURLJSONHandlerEmptyBody() {
 }
 
 func (suite *HandlerTestSuite) TestGetUserURLsHandlerWithExistingURLs() {
-	suite.urlServiceMock.EXPECT().GetURLsByOwnerID(gomock.Any()).Return([]entity.ShortenedURLInfo{*dummyShortenedURLInfo1, *dummyShortenedURLInfo2}, nil)
+	suite.urlServiceMock.EXPECT().GetURLsByOwnerID(gomock.Any()).Return([]*entity.ShortenedURLInfo{dummyShortenedURLInfo1, dummyShortenedURLInfo2}, nil)
 
 	response, urLsResponses := executeGetUserURLsRequest(suite.T(), suite.server)
 
@@ -97,7 +97,7 @@ func (suite *HandlerTestSuite) TestGetUserURLsHandlerWithExistingURLs() {
 }
 
 func (suite *HandlerTestSuite) TestGetUserURLsHandlerNotFoundURLs() {
-	suite.urlServiceMock.EXPECT().GetURLsByOwnerID(gomock.Any()).Return([]entity.ShortenedURLInfo{}, nil)
+	suite.urlServiceMock.EXPECT().GetURLsByOwnerID(gomock.Any()).Return([]*entity.ShortenedURLInfo{}, nil)
 
 	response, urLsResponses := executeGetUserURLsRequest(suite.T(), suite.server)
 

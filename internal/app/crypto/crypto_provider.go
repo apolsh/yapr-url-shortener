@@ -1,6 +1,6 @@
 package crypto
 
-type Provider interface {
+type CryptographicProvider interface {
 	Encrypt(data []byte) string
 	Decrypt(data []byte) (string, error)
 }

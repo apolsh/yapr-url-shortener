@@ -12,7 +12,7 @@ type AESCryptoProvider struct {
 	aesBlock cipher.Block
 }
 
-func NewAESCryptoProvider(keyString string) Provider {
+func NewAESCryptoProvider(keyString string) CryptographicProvider {
 	keyHash := sha256.Sum256([]byte(keyString))
 
 	aesBlock, err := aes.NewCipher(keyHash[:])

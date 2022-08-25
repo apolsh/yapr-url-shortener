@@ -49,12 +49,12 @@ func NewFileBackup(filename string) (*fileBackup, error) {
 }
 
 type URLRepositoryInMemory struct {
-	Storage       map[string]entity.ShortenedURLInfo
+	Storage       map[string]*entity.ShortenedURLInfo
 	backupStorage backupStorage
 }
 
 func NewURLRepositoryInMemory(fileStorage string) URLRepository {
-	storage := make(map[string]entity.ShortenedURLInfo)
+	storage := make(map[string]*entity.ShortenedURLInfo)
 	if fileStorage != "" {
 		backupStorage, err := NewFileBackup(fileStorage)
 		if err != nil {
@@ -68,35 +68,35 @@ func NewURLRepositoryInMemory(fileStorage string) URLRepository {
 			if err != nil {
 				panic(fmt.Sprintf("Backup restore error: %s", err))
 			}
-			storage[url.ID] = *url
+			storage[url.ID] = url
 		}
 		return &URLRepositoryInMemory{Storage: storage, backupStorage: backupStorage}
 	}
 	return &URLRepositoryInMemory{Storage: storage, backupStorage: nil}
 }
 
-func (r *URLRepositoryInMemory) Save(shortenedURLEntity entity.ShortenedURLInfo) (string, error) {
-	_, err := r.GetByOriginalURL(shortenedURLEntity.GetOriginalURL())
+func (r *URLRepositoryInMemory) Save(shortenedInfo *entity.ShortenedURLInfo) (string, error) {
+	_, err := r.GetByOriginalURL(shortenedInfo.GetOriginalURL())
 	if err != nil && errors.Is(err, ErrorItemNotFound) {
 		id := nextID()
-		shortenedURLEntity.SetID(id)
+		shortenedInfo.SetID(id)
 		if r.backupStorage != nil {
-			err := r.backupStorage.write(&shortenedURLEntity)
+			err := r.backupStorage.write(shortenedInfo)
 			if err != nil {
 				return "", err
 			}
 		}
-		r.Storage[id] = shortenedURLEntity
+		r.Storage[id] = shortenedInfo
 		return id, nil
 	}
 	return "", err
 }
 
-func (r *URLRepositoryInMemory) SaveBatch(owner string, batch []dto.ShortenInBatchRequestItem) ([]*dto.ShortenInBatchResponseItem, error) {
+func (r *URLRepositoryInMemory) SaveBatch(owner string, batch []*dto.ShortenInBatchRequestItem) ([]*dto.ShortenInBatchResponseItem, error) {
 	response := make([]*dto.ShortenInBatchResponseItem, 0, len(batch))
 	for _, item := range batch {
 		info := entity.NewUnstoredShortenedURLInfo(owner, item.OriginalURL)
-		id, _ := r.Save(*info)
+		id, _ := r.Save(info)
 		response = append(response, &dto.ShortenInBatchResponseItem{CorrelationID: item.CorrelationID, ShortURL: id})
 	}
 
@@ -108,20 +108,20 @@ func (r URLRepositoryInMemory) GetByID(id string) (*entity.ShortenedURLInfo, err
 	if !isFound {
 		return nil, ErrorItemNotFound
 	}
-	return &s, nil
+	return s, nil
 }
 
 func (r URLRepositoryInMemory) GetByOriginalURL(url string) (*entity.ShortenedURLInfo, error) {
 	for _, value := range r.Storage {
 		if value.OriginalURL == url {
-			return &value, nil
+			return value, nil
 		}
 	}
 	return nil, ErrorItemNotFound
 }
 
-func (r URLRepositoryInMemory) GetAllByOwner(owner string) ([]entity.ShortenedURLInfo, error) {
-	urls := make([]entity.ShortenedURLInfo, 0)
+func (r URLRepositoryInMemory) GetAllByOwner(owner string) ([]*entity.ShortenedURLInfo, error) {
+	urls := make([]*entity.ShortenedURLInfo, 0)
 	for _, value := range r.Storage {
 		if value.Owner == owner {
 			urls = append(urls, value)

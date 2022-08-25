@@ -8,15 +8,15 @@ import (
 )
 
 type URLRepository interface {
-	Save(shortenedInfo entity.ShortenedURLInfo) (string, error)
+	Save(shortenedInfo *entity.ShortenedURLInfo) (string, error)
 
-	SaveBatch(owner string, batch []dto.ShortenInBatchRequestItem) ([]*dto.ShortenInBatchResponseItem, error)
+	SaveBatch(owner string, batch []*dto.ShortenInBatchRequestItem) ([]*dto.ShortenInBatchResponseItem, error)
 
 	GetByID(id string) (*entity.ShortenedURLInfo, error)
 
 	GetByOriginalURL(url string) (*entity.ShortenedURLInfo, error)
 
-	GetAllByOwner(owner string) ([]entity.ShortenedURLInfo, error)
+	GetAllByOwner(owner string) ([]*entity.ShortenedURLInfo, error)
 
 	Close()
 

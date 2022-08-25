@@ -14,13 +14,13 @@ type ContextKey string
 
 var OwnerID ContextKey = "userId"
 
-func generateNewUserIDCookie(uuid []byte, cryptoProvider crypto.Provider) *http.Cookie {
+func generateNewUserIDCookie(uuid []byte, cryptoProvider crypto.CryptographicProvider) *http.Cookie {
 
 	encryptedUserID := cryptoProvider.Encrypt(uuid)
 	return &http.Cookie{Name: authCookieName, Value: encryptedUserID}
 }
 
-func AuthMiddleware(cryptoProvider crypto.Provider) func(http.Handler) http.Handler {
+func AuthMiddleware(cryptoProvider crypto.CryptographicProvider) func(http.Handler) http.Handler {
 	//TODO: rewrite without else ?
 	return func(next http.Handler) http.Handler {
 		handlerFunction := func(w http.ResponseWriter, r *http.Request) {
