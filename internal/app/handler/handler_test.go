@@ -69,7 +69,7 @@ func (suite *HandlerTestSuite) TestSaveURLJSONHandlerValidRequest() {
 	id := "id1"
 	suite.urlServiceMock.EXPECT().AddNewURL(gomock.Any()).Return(id, nil)
 
-	response, jsonResult := executeSaveURLJSON(suite.T(), suite.server, dummyURL1)
+	response, jsonResult, _ := executeSaveURLJSON(suite.T(), suite.server, dummyURL1)
 	defer response.Body.Close()
 
 	assert.Equal(suite.T(), 201, response.StatusCode)
@@ -77,10 +77,11 @@ func (suite *HandlerTestSuite) TestSaveURLJSONHandlerValidRequest() {
 }
 
 func (suite *HandlerTestSuite) TestSaveURLJSONHandlerEmptyBody() {
-	response, _ := executeSaveURLJSON(suite.T(), suite.server, "")
+	response, _, errorMessage := executeSaveURLJSON(suite.T(), suite.server, "")
 	defer response.Body.Close()
 
 	assert.Equal(suite.T(), 400, response.StatusCode)
+	assert.Equal(suite.T(), "Passed value is not valid URL\n", errorMessage)
 }
 
 func (suite *HandlerTestSuite) TestGetUserURLsHandlerWithExistingURLs() {
@@ -156,7 +157,7 @@ func executeGetURLRequest(t *testing.T, server *httptest.Server, path string) (*
 	return response, string(body)
 }
 
-func executeSaveURLJSON(t *testing.T, server *httptest.Server, urlToSave string) (*http.Response, SaveURLResponse) {
+func executeSaveURLJSON(t *testing.T, server *httptest.Server, urlToSave string) (*http.Response, *SaveURLResponse, string) {
 	var request *http.Request
 	var err error
 
@@ -172,11 +173,15 @@ func executeSaveURLJSON(t *testing.T, server *httptest.Server, urlToSave string)
 
 	defer response.Body.Close()
 
-	var parsedBody SaveURLResponse
-	err = json.Unmarshal(body, &parsedBody)
-	require.NoError(t, err)
+	if response.StatusCode == 201 {
+		var parsedBody SaveURLResponse
+		err = json.Unmarshal(body, &parsedBody)
+		require.NoError(t, err)
 
-	return response, parsedBody
+		return response, &parsedBody, ""
+	}
+
+	return response, nil, string(body)
 }
 
 func executeSaveURL(t *testing.T, server *httptest.Server, urlToSave string) (*http.Response, string) {
