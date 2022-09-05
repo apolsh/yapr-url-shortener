@@ -209,12 +209,13 @@ func setupTable(conn *pgxpool.Pool) error {
 		_ = tx.Rollback(ctx)
 	}()
 
-	createTableQ := `create table if not exists shortened_urls
-					(
-						id           varchar(20) not null,
-						original_url varchar     not null,
-						owner        uuid        not null
-					)`
+	createTableQ := `create table shortened_urls
+	(
+		id           varchar(20)        not null,
+		original_url varchar            not null,
+		owner        uuid               not null,
+		status       smallint default 0 not null
+	)`
 	createIDIndexQ := "create unique index if not exists shortened_urls_id_uindex on shortened_urls (id)"
 	createOriginalURLIndexQ := "create unique index if not exists shortened_urls_original_url_uindex on shortened_urls (original_url)"
 	_, err = tx.Exec(ctx, createTableQ)
