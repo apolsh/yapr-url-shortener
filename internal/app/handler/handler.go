@@ -67,12 +67,42 @@ func (h *handler) Register(router *chi.Mux) {
 	router.Route("/", func(r chi.Router) {
 		r.Get("/ping", h.PingDB)
 		r.Get("/{urlID}", h.GetURLHandler)
-		r.Post("/api/shorten/batch", h.PostShortenURLsInBatch)
 		r.Get("/api/user/urls", h.GetUserURLsHandler)
+		r.Post("/api/shorten/batch", h.PostShortenURLsInBatch)
 		r.Post("/", h.SaveURLHandler)
 		r.Post("/api/shorten", h.SaveURLJSONHandler)
-
+		r.Delete("/api/user/urls", h.DeleteShortenURLsInBatch)
 	})
+}
+
+func (h *handler) DeleteShortenURLsInBatch(w http.ResponseWriter, r *http.Request) {
+	if !isValidContentType(r, "application/json", "application/x-gzip") {
+		http.Error(w, invalidContentTypeError, http.StatusBadRequest)
+		return
+	}
+
+	reader, err := getBodyReader(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer reader.Close()
+
+	var ids []*string
+
+	if err := json.NewDecoder(reader).Decode(&ids); err != nil {
+		http.Error(w, decodeRequestBodyError, http.StatusBadRequest)
+		return
+	}
+	ownerID := r.Context().Value(middleware.OwnerID).(string)
+	err = h.service.DeleteURLsInBatch(ownerID, ids)
+
+	if err != nil {
+		//TODO: not enough rights error ?
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusAccepted)
 }
 
 func (h *handler) PostShortenURLsInBatch(w http.ResponseWriter, r *http.Request) {
@@ -105,7 +135,7 @@ func (h *handler) PostShortenURLsInBatch(w http.ResponseWriter, r *http.Request)
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(201)
+	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(batch); err != nil {
 		http.Error(w, "Error while generating response", http.StatusInternalServerError)
 	}
@@ -125,6 +155,10 @@ func (h *handler) GetURLHandler(w http.ResponseWriter, r *http.Request) {
 		foundURL, err := h.service.GetURLByID(urlID)
 		if errors.Is(repository.ErrorItemNotFound, err) {
 			http.NotFound(w, r)
+			return
+		}
+		if errors.Is(service.ErrorItemIsDeleted, err) {
+			http.Error(w, "", http.StatusGone)
 			return
 		}
 		http.Redirect(w, r, foundURL, http.StatusTemporaryRedirect)

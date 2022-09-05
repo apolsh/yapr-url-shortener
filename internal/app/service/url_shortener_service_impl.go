@@ -19,8 +19,11 @@ func (r URLShortenerServiceImpl) AddNewURL(shortenedURLInfo *entity.ShortenedURL
 }
 
 func (r URLShortenerServiceImpl) GetURLByID(id string) (string, error) {
-	byID, err := r.repository.GetByID(id)
-	return byID.GetOriginalURL(), err
+	item, err := r.repository.GetByID(id)
+	if item.IsDeleted() {
+		return "", ErrorItemIsDeleted
+	}
+	return item.GetOriginalURL(), err
 }
 
 func (r URLShortenerServiceImpl) GetByOriginalURL(originalURL string) (*entity.ShortenedURLInfo, error) {
@@ -37,4 +40,8 @@ func (r URLShortenerServiceImpl) PingDB() bool {
 
 func (r URLShortenerServiceImpl) AddNewURLsInBatch(owner string, batch []*dto.ShortenInBatchRequestItem) ([]*dto.ShortenInBatchResponseItem, error) {
 	return r.repository.SaveBatch(owner, batch)
+}
+
+func (r URLShortenerServiceImpl) DeleteURLsInBatch(owner string, ids []*string) error {
+	return r.repository.DeleteURLsInBatch(owner, ids)
 }

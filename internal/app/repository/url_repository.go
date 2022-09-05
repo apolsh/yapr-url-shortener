@@ -21,6 +21,8 @@ type URLRepository interface {
 	Close()
 
 	Ping() bool
+
+	DeleteURLsInBatch(owner string, ids []*string) error
 }
 
 var ErrorItemNotFound = errors.New("item not found")

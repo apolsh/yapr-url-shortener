@@ -8,6 +8,7 @@ import (
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/dto"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
 	"io"
+	"log"
 	"os"
 )
 
@@ -78,16 +79,18 @@ func NewURLRepositoryInMemory(fileStorage string) URLRepository {
 func (r *URLRepositoryInMemory) Save(shortenedInfo *entity.ShortenedURLInfo) (string, error) {
 	_, err := r.GetByOriginalURL(shortenedInfo.GetOriginalURL())
 	if err != nil && errors.Is(err, ErrorItemNotFound) {
-		id := nextID()
-		shortenedInfo.SetID(id)
+		if shortenedInfo.GetID() == "" {
+			id := nextID()
+			shortenedInfo.SetID(id)
+		}
 		if r.backupStorage != nil {
 			err := r.backupStorage.write(shortenedInfo)
 			if err != nil {
 				return "", err
 			}
 		}
-		r.Storage[id] = shortenedInfo
-		return id, nil
+		r.Storage[shortenedInfo.GetID()] = shortenedInfo
+		return shortenedInfo.GetID(), nil
 	}
 	return "", err
 }
@@ -101,6 +104,22 @@ func (r *URLRepositoryInMemory) SaveBatch(owner string, batch []*dto.ShortenInBa
 	}
 
 	return response, nil
+}
+
+func (r *URLRepositoryInMemory) DeleteURLsInBatch(owner string, ids []*string) error {
+	for _, id := range ids {
+		urlEntity, isFound := r.Storage[*id]
+		if isFound && urlEntity.GetOwner() == owner {
+			urlEntity.SetDeleted()
+			delete(r.Storage, urlEntity.GetID())
+			_, err := r.Save(urlEntity)
+			if err != nil {
+				log.Println("failed to save ", urlEntity.GetID(), err.Error())
+			}
+		}
+	}
+
+	return nil
 }
 
 func (r URLRepositoryInMemory) GetByID(id string) (*entity.ShortenedURLInfo, error) {
