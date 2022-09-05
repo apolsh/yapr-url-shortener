@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/apolsh/yapr-url-shortener/internal/app/config"
+	"github.com/apolsh/yapr-url-shortener/internal/app/crypto"
 	"github.com/apolsh/yapr-url-shortener/internal/app/handler"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository"
 	"github.com/apolsh/yapr-url-shortener/internal/app/service"
@@ -21,9 +22,17 @@ func main() {
 	router.Use(middleware.Logger)
 	router.Use(middleware.Recoverer)
 
-	urlShortenerStorage := repository.NewURLRepositoryInMemory(cfg.FileStoragePath)
+	authCryptoProvider := crypto.NewAESCryptoProvider(cfg.AuthSecretKey)
+	var urlShortenerStorage repository.URLRepository
+	if cfg.DatabaseDSN != "" {
+		urlShortenerStorage = repository.NewURLRepositoryPG(cfg.DatabaseDSN)
+	} else {
+		urlShortenerStorage = repository.NewURLRepositoryInMemory(cfg.FileStoragePath)
+	}
+	defer urlShortenerStorage.Close()
+
 	urlShortenerService := service.NewURLShortenerService(urlShortenerStorage)
-	chiHandler := handler.NewURLShortenerHandler(cfg.BaseURL, urlShortenerService)
+	chiHandler := handler.NewURLShortenerHandler(cfg.BaseURL, urlShortenerService, authCryptoProvider)
 	chiHandler.Register(router)
 
 	log.Fatal(http.ListenAndServe(cfg.ServerAddress, router))

@@ -2,13 +2,14 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
-	"github.com/apolsh/yapr-url-shortener/internal/app/config"
-	"github.com/apolsh/yapr-url-shortener/internal/app/mock"
-	"github.com/apolsh/yapr-url-shortener/internal/app/service"
+	"github.com/apolsh/yapr-url-shortener/internal/app/mocks"
+	"github.com/apolsh/yapr-url-shortener/internal/app/repository"
+	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
 	"github.com/go-chi/chi/v5"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -16,14 +17,127 @@ import (
 	"testing"
 )
 
-var saveURLHeaders = map[string]string{
-	"Content-Type": "text/plain",
+const dummyURL1 = "https://google.com"
+const dummyURL2 = "https://ya.ru"
+
+var dummyShortenedURLInfo1 = entity.NewShortenedURLInfo("0", "owner", dummyURL1)
+var dummyShortenedURLInfo2 = entity.NewShortenedURLInfo("1", "owner", dummyURL2)
+
+type HandlerTestSuite struct {
+	suite.Suite
+	ctrl           *gomock.Controller
+	server         *httptest.Server
+	urlServiceMock *mocks.MockURLShortenerService
 }
-var saveURLJSONHeaders = map[string]string{
-	"Content-Type": "application/json",
+
+func (suite *HandlerTestSuite) SetupTest() {
+	ctrl := gomock.NewController(suite.T())
+	suite.ctrl = ctrl
 }
-var testURL1 = "https://riptutorial.com/go/example/2570/http-hello-world-with-custom-server-and-mux"
-var testURL2 = "https://bitfieldconsulting.com/golang/map-declaring-initializing"
+
+func (suite *HandlerTestSuite) BeforeTest(suiteName, testName string) {
+	s := mocks.NewMockURLShortenerService(suite.ctrl)
+	p := mocks.NewMockCryptographicProvider(suite.ctrl)
+	handler := NewURLShortenerHandler("http://localhost:8080", s, p)
+	r := chi.NewRouter()
+	handler.Register(r)
+	p.EXPECT().Encrypt(gomock.Any()).Return("encrypted_value")
+
+	suite.urlServiceMock = s
+	suite.server = httptest.NewServer(r)
+}
+
+func (suite *HandlerTestSuite) TestSaveURLHandlerValidRequest() {
+	id := "id1"
+	suite.urlServiceMock.EXPECT().AddNewURL(gomock.Any()).Return(id, nil)
+
+	response, shortenedURL := executeSaveURL(suite.T(), suite.server, dummyURL1)
+	defer response.Body.Close()
+
+	assert.Equal(suite.T(), 201, response.StatusCode)
+	assert.Equal(suite.T(), "http://localhost:8080/"+id, shortenedURL)
+}
+
+func (suite *HandlerTestSuite) TestSaveURLHandlerEmptyBody() {
+	response, _ := executeSaveURL(suite.T(), suite.server, "")
+	defer response.Body.Close()
+
+	assert.Equal(suite.T(), 400, response.StatusCode)
+}
+
+func (suite *HandlerTestSuite) TestSaveURLJSONHandlerValidRequest() {
+	id := "id1"
+	suite.urlServiceMock.EXPECT().AddNewURL(gomock.Any()).Return(id, nil)
+
+	response, jsonResult, _ := executeSaveURLJSON(suite.T(), suite.server, dummyURL1)
+	defer response.Body.Close()
+
+	assert.Equal(suite.T(), 201, response.StatusCode)
+	assert.Equal(suite.T(), "http://localhost:8080/"+id, jsonResult.Result)
+}
+
+func (suite *HandlerTestSuite) TestSaveURLJSONHandlerEmptyBody() {
+	response, _, errorMessage := executeSaveURLJSON(suite.T(), suite.server, "")
+	defer response.Body.Close()
+
+	assert.Equal(suite.T(), 400, response.StatusCode)
+	assert.Equal(suite.T(), "Passed value is not valid URL\n", errorMessage)
+}
+
+func (suite *HandlerTestSuite) TestGetUserURLsHandlerWithExistingURLs() {
+	suite.urlServiceMock.EXPECT().GetURLsByOwnerID(gomock.Any()).Return([]*entity.ShortenedURLInfo{dummyShortenedURLInfo1, dummyShortenedURLInfo2}, nil)
+
+	response, urLsResponses := executeGetUserURLsRequest(suite.T(), suite.server)
+
+	redirectResponse := getRedirectResponse(response)
+	defer redirectResponse.Body.Close()
+
+	assert.Equal(suite.T(), 200, response.StatusCode)
+	assert.Equal(suite.T(), 2, len(urLsResponses))
+}
+
+func (suite *HandlerTestSuite) TestGetUserURLsHandlerNotFoundURLs() {
+	suite.urlServiceMock.EXPECT().GetURLsByOwnerID(gomock.Any()).Return([]*entity.ShortenedURLInfo{}, nil)
+
+	response, urLsResponses := executeGetUserURLsRequest(suite.T(), suite.server)
+
+	redirectResponse := getRedirectResponse(response)
+	defer redirectResponse.Body.Close()
+
+	assert.Equal(suite.T(), 204, response.StatusCode)
+	assert.Equal(suite.T(), 0, len(urLsResponses))
+}
+
+func (suite *HandlerTestSuite) TestGetURLHandlerWithExistingURL() {
+	suite.urlServiceMock.EXPECT().GetURLByID(gomock.Any()).Return(dummyURL1, nil)
+
+	response, _ := executeGetURLRequest(suite.T(), suite.server, "/0")
+	redirectResponse := getRedirectResponse(response)
+	defer redirectResponse.Body.Close()
+
+	assert.Equal(suite.T(), http.StatusTemporaryRedirect, redirectResponse.StatusCode)
+	assert.Equal(suite.T(), dummyURL1, redirectResponse.Header.Get("Location"))
+}
+
+func (suite *HandlerTestSuite) TestGetURLHandlerWithURLNotExist() {
+	suite.urlServiceMock.EXPECT().GetURLByID(gomock.Any()).Return("", repository.ErrorItemNotFound)
+
+	response, _ := executeGetURLRequest(suite.T(), suite.server, "/0")
+	defer response.Body.Close()
+
+	assert.Equal(suite.T(), http.StatusNotFound, response.StatusCode)
+}
+
+func (suite *HandlerTestSuite) TestGetURLHandlerWithoutID() {
+	response, _ := executeGetURLRequest(suite.T(), suite.server, "/")
+	defer response.Body.Close()
+
+	assert.Equal(suite.T(), http.StatusMethodNotAllowed, response.StatusCode)
+}
+
+func TestExampleTestSuite(t *testing.T) {
+	suite.Run(t, new(HandlerTestSuite))
+}
 
 func executeGetURLRequest(t *testing.T, server *httptest.Server, path string) (*http.Response, string) {
 	var request *http.Request
@@ -43,16 +157,40 @@ func executeGetURLRequest(t *testing.T, server *httptest.Server, path string) (*
 	return response, string(body)
 }
 
-func executeSaveURLRequest(t *testing.T, server *httptest.Server, requestBody string, headers map[string]string) (*http.Response, string) {
+func executeSaveURLJSON(t *testing.T, server *httptest.Server, urlToSave string) (*http.Response, *SaveURLResponse, string) {
 	var request *http.Request
 	var err error
 
-	request, err = http.NewRequest(http.MethodPost, server.URL, strings.NewReader(requestBody))
-
+	request, err = http.NewRequest(http.MethodPost, server.URL+"/api/shorten", strings.NewReader(`{"url":"`+urlToSave+`"}`))
 	require.NoError(t, err)
-	for k, v := range headers {
-		request.Header.Set(k, v)
+	request.Header.Add("Content-Type", "application/json; charset=utf-8")
+
+	response, err := http.DefaultClient.Do(request)
+	require.NoError(t, err)
+
+	body, err := io.ReadAll(response.Body)
+	require.NoError(t, err)
+
+	defer response.Body.Close()
+
+	if response.StatusCode == 201 {
+		var parsedBody SaveURLResponse
+		err = json.Unmarshal(body, &parsedBody)
+		require.NoError(t, err)
+
+		return response, &parsedBody, ""
 	}
+
+	return response, nil, string(body)
+}
+
+func executeSaveURL(t *testing.T, server *httptest.Server, urlToSave string) (*http.Response, string) {
+	var request *http.Request
+	var err error
+
+	request, err = http.NewRequest(http.MethodPost, server.URL+"/", strings.NewReader(urlToSave))
+	require.NoError(t, err)
+	request.Header.Add("Content-Type", "text")
 
 	response, err := http.DefaultClient.Do(request)
 	require.NoError(t, err)
@@ -65,179 +203,34 @@ func executeSaveURLRequest(t *testing.T, server *httptest.Server, requestBody st
 	return response, string(body)
 }
 
-func executeSaveURLJSONRequest(t *testing.T, server *httptest.Server, requestBody string, headers map[string]string) (*http.Response, string) {
+func executeGetUserURLsRequest(t *testing.T, server *httptest.Server) (*http.Response, []GetUserURLsResponse) {
 	var request *http.Request
 	var err error
 
-	request, err = http.NewRequest(http.MethodPost, server.URL+"/api/shorten", strings.NewReader(requestBody))
-
+	request, err = http.NewRequest(http.MethodGet, server.URL+"/api/user/urls", nil)
 	require.NoError(t, err)
-	for k, v := range headers {
-		request.Header.Set(k, v)
-	}
 
 	response, err := http.DefaultClient.Do(request)
 	require.NoError(t, err)
 
-	body, err := io.ReadAll(response.Body)
-	require.NoError(t, err)
+	var body []GetUserURLsResponse
+
+	if response.ContentLength != 0 {
+		err = json.NewDecoder(response.Body).Decode(&body)
+		require.NoError(t, err)
+	}
 
 	defer response.Body.Close()
-
-	return response, string(body)
+	return response, body
 }
 
-var cfg config.Config
+func getRedirectResponse(response *http.Response) *http.Response {
+	tempResponse := response
+	var preTempResponse *http.Response
 
-func getConfig() config.Config {
-	if cfg == (config.Config{}) {
-		cfg = config.Load()
+	for tempResponse != nil {
+		preTempResponse = tempResponse
+		tempResponse = tempResponse.Request.Response
 	}
-	return cfg
-}
-
-func TestHandler_GetURLHandler(t *testing.T) {
-	alreadyStoredURLs := make(map[int]string)
-	alreadyStoredURLs[0] = testURL1
-	alreadyStoredURLs[1] = testURL2
-	cfg := getConfig()
-
-	repositoryMock := mock.NewURLRepositoryMock(alreadyStoredURLs)
-	h := NewURLShortenerHandler(cfg.BaseURL, service.NewURLShortenerService(repositoryMock))
-	r := chi.NewRouter()
-	h.Register(r)
-
-	server := httptest.NewServer(r)
-	defer server.Close()
-
-	t.Run("Get existing URL", func(t *testing.T) {
-		response, _ := executeGetURLRequest(t, server, "/0")
-		err := response.Body.Close()
-		require.NoError(t, err)
-		assert.Equal(t, 200, response.StatusCode)
-		assert.Equal(t, testURL1, response.Request.URL.String())
-
-		t.Run("Extract not exist id", func(t *testing.T) {
-			response, body := executeGetURLRequest(t, server, "/100")
-			err := response.Body.Close()
-			require.NoError(t, err)
-			assert.Equal(t, 404, response.StatusCode)
-			assert.Equal(t, "404 page not found\n", body)
-		})
-
-		t.Run("Extract empty id", func(t *testing.T) {
-			response, _ := executeGetURLRequest(t, server, "/")
-			err := response.Body.Close()
-			require.NoError(t, err)
-			assert.Equal(t, 405, response.StatusCode)
-		})
-
-		t.Run("Extract wrong id type", func(t *testing.T) {
-			response, body := executeGetURLRequest(t, server, "/abc")
-			err := response.Body.Close()
-			require.NoError(t, err)
-			assert.Equal(t, 400, response.StatusCode)
-			assert.Equal(t, "Invalid parameter\n", body)
-		})
-	})
-}
-
-func TestHandler_SaveURLHandler(t *testing.T) {
-	cfg := getConfig()
-	h := NewURLShortenerHandler(cfg.BaseURL, service.NewURLShortenerService(mock.NewURLRepositoryMock(make(map[int]string))))
-	r := chi.NewRouter()
-	h.Register(r)
-
-	server := httptest.NewServer(r)
-	defer server.Close()
-
-	t.Run("Adding and extracting multiple URL's", func(t *testing.T) {
-		response, stringBody := executeSaveURLRequest(t, server, testURL1, saveURLHeaders)
-		err := response.Body.Close()
-		require.NoError(t, err)
-		assert.Equal(t, 201, response.StatusCode)
-		assert.Equal(t, fmt.Sprintf("%s/0", cfg.BaseURL), stringBody)
-
-		response, stringBody = executeSaveURLRequest(t, server, testURL2, saveURLHeaders)
-		err = response.Body.Close()
-		require.NoError(t, err)
-		assert.Equal(t, 201, response.StatusCode)
-		assert.Equal(t, fmt.Sprintf("%s/1", cfg.BaseURL), stringBody)
-	})
-
-	t.Run("Add with invalid content-type", func(t *testing.T) {
-		response, body := executeSaveURLRequest(t, server, testURL2, map[string]string{"Content-Type": "multipart/form-data"})
-		err := response.Body.Close()
-		require.NoError(t, err)
-		assert.Equal(t, 400, response.StatusCode)
-		assert.Equal(t, "Invalid Content-Type: multipart/form-data\n", body)
-	})
-}
-
-func TestHandler_SaveURLJSONHandler(t *testing.T) {
-	cfg := getConfig()
-	h := NewURLShortenerHandler(cfg.BaseURL, service.NewURLShortenerService(mock.NewURLRepositoryMock(make(map[int]string))))
-	r := chi.NewRouter()
-	h.Register(r)
-
-	server := httptest.NewServer(r)
-	defer server.Close()
-
-	t.Run("Adding and extracting multiple URL's", func(t *testing.T) {
-
-		marshal, err := json.Marshal(&SaveURLBody{URL: testURL1})
-		require.NoError(t, err)
-
-		response, stringBody := executeSaveURLJSONRequest(t, server, string(marshal), saveURLJSONHeaders)
-		err = response.Body.Close()
-		require.NoError(t, err)
-		assert.Equal(t, 201, response.StatusCode)
-		assert.JSONEq(t, fmt.Sprintf(`{"result":"%s/0"}`, cfg.BaseURL), stringBody)
-
-		marshal, err = json.Marshal(&SaveURLBody{URL: testURL2})
-		require.NoError(t, err)
-
-		response, stringBody = executeSaveURLJSONRequest(t, server, string(marshal), saveURLJSONHeaders)
-		err = response.Body.Close()
-		require.NoError(t, err)
-		assert.Equal(t, 201, response.StatusCode)
-		assert.JSONEq(t, fmt.Sprintf(`{"result":"%s/1"}`, cfg.BaseURL), stringBody)
-	})
-
-	//t.Run("Add with invalid content-type", func(t *testing.T) {
-	//	response, body := executeSaveURLRequest(t, server, testURL2, map[string]string{"Content-Type": "application/json"})
-	//	err := response.Body.Close()
-	//	require.NoError(t, err)
-	//	assert.Equal(t, 400, response.StatusCode)
-	//	assert.Equal(t, "Invalid Content-Type\n", body)
-	//})
-}
-
-func TestHandler_CommonTests(t *testing.T) {
-	cfg := getConfig()
-	h := NewURLShortenerHandler(cfg.BaseURL, service.NewURLShortenerService(mock.NewURLRepositoryMock(make(map[int]string))))
-	r := chi.NewRouter()
-	h.Register(r)
-
-	server := httptest.NewServer(r)
-	defer server.Close()
-
-	t.Run("Send wrong http Method", func(t *testing.T) {
-		var request *http.Request
-		var err error
-
-		request, err = http.NewRequest(http.MethodPut, server.URL, strings.NewReader(testURL1))
-
-		require.NoError(t, err)
-		for k, v := range saveURLHeaders {
-			request.Header.Set(k, v)
-		}
-
-		response, err := http.DefaultClient.Do(request)
-		require.NoError(t, err)
-
-		err = response.Body.Close()
-		require.NoError(t, err)
-		assert.Equal(t, 405, response.StatusCode)
-	})
+	return preTempResponse
 }
