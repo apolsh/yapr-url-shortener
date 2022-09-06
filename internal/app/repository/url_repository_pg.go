@@ -78,9 +78,10 @@ func NewURLRepositoryPG(databaseDSN string) URLRepository {
 		panic(err)
 	}
 
-	asyncWorker := newAsyncDBTransactionWorker(conn)
+	//asyncWorker := newAsyncDBTransactionWorker(conn)
 
-	return &URLRepositoryPG{DB: conn, AsyncWorker: asyncWorker}
+	//return &URLRepositoryPG{DB: conn, AsyncWorker: asyncWorker}
+	return &URLRepositoryPG{DB: conn, AsyncWorker: nil}
 }
 
 func (repo URLRepositoryPG) Save(info *entity.ShortenedURLInfo) (string, error) {

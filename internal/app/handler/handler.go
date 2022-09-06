@@ -67,8 +67,8 @@ func (h *handler) Register(router *chi.Mux) {
 	router.Route("/", func(r chi.Router) {
 		r.Get("/ping", h.PingDB)
 		r.Get("/{urlID}", h.GetURLHandler)
-		r.Get("/api/user/urls", h.GetUserURLsHandler)
 		r.Post("/api/shorten/batch", h.PostShortenURLsInBatch)
+		r.Get("/api/user/urls", h.GetUserURLsHandler)
 		r.Post("/", h.SaveURLHandler)
 		r.Post("/api/shorten", h.SaveURLJSONHandler)
 		r.Delete("/api/user/urls", h.DeleteShortenURLsInBatch)
