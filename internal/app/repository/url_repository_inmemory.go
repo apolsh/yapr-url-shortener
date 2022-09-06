@@ -62,7 +62,7 @@ func NewURLRepositoryInMemory(fileStorage string) (URLRepository, error) {
 	if fileStorage != "" {
 		backupStorage, err := NewFileBackup(fileStorage)
 		if err != nil {
-			return nil, fmt.Errorf(`Repository initialization error: %w `, err)
+			return nil, fmt.Errorf(`repository initialization error: %w`, err)
 		}
 		for {
 			url, err := backupStorage.read()
@@ -70,7 +70,7 @@ func NewURLRepositoryInMemory(fileStorage string) (URLRepository, error) {
 				break
 			}
 			if err != nil {
-				return nil, fmt.Errorf(`Repository initialization error: %w `, err)
+				return nil, fmt.Errorf(`repository initialization error: %w`, err)
 			}
 			storage[url.ID] = url
 		}

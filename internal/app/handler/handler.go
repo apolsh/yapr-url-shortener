@@ -99,7 +99,6 @@ func (h *handler) DeleteShortenURLsInBatch(w http.ResponseWriter, r *http.Reques
 	err = h.service.DeleteURLsInBatch(ownerID, ids)
 
 	if err != nil {
-		//TODO: not enough rights error ?
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

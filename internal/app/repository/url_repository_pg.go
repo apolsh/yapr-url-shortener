@@ -71,13 +71,12 @@ type URLRepositoryPG struct {
 
 func NewURLRepositoryPG(databaseDSN string) (URLRepository, error) {
 	conn, err := pgxpool.Connect(context.Background(), databaseDSN)
-	//TODO: throw exception DONT PANIC here !
 	if err != nil {
-		return nil, fmt.Errorf(`Repository initialization error: %w `, err)
+		return nil, fmt.Errorf(`repository initialization error: %w`, err)
 	}
 	err = setupTable(conn)
 	if err != nil {
-		return nil, fmt.Errorf(`Repository initialization error: %w `, err)
+		return nil, fmt.Errorf(`repository initialization error: %w`, err)
 	}
 
 	asyncWorker := newAsyncDBTransactionWorker(conn)

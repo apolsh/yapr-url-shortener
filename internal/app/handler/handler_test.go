@@ -149,12 +149,14 @@ func (suite *HandlerTestSuite) TestDeleteShortenURLsInBatch() {
 	}).Return(nil)
 
 	response, s := executeDeleteShortenURLsInBatch(suite.T(), suite.server, idsToDelete)
+	defer response.Body.Close()
 	assert.Equal(suite.T(), "", s)
 	assert.Equal(suite.T(), response.StatusCode, http.StatusAccepted)
 }
 
 func (suite *HandlerTestSuite) TestDeleteShortenURLsInBatchInvalidBody() {
 	response, s := executeDeleteShortenURLsInBatch(suite.T(), suite.server, nil)
+	defer response.Body.Close()
 	assert.Equal(suite.T(), response.StatusCode, http.StatusBadRequest)
 	assert.Equal(suite.T(), "failed to decode body\n", s)
 }
