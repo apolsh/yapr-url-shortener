@@ -3,14 +3,16 @@ package repository
 import (
 	"context"
 	"errors"
+	"fmt"
+	"log"
+	"runtime"
+	"time"
+
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/dto"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"log"
-	"runtime"
-	"time"
 )
 
 const preparedSaveBatchStatement = "SAVE_BATCH_STATEMENT"
@@ -67,20 +69,20 @@ type URLRepositoryPG struct {
 	AsyncWorker *AsyncDBTransactionWorker
 }
 
-func NewURLRepositoryPG(databaseDSN string) URLRepository {
+func NewURLRepositoryPG(databaseDSN string) (URLRepository, error) {
 	conn, err := pgxpool.Connect(context.Background(), databaseDSN)
 	//TODO: throw exception DONT PANIC here !
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf(`Repository initialization error: %w `, err)
 	}
 	err = setupTable(conn)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf(`Repository initialization error: %w `, err)
 	}
 
 	asyncWorker := newAsyncDBTransactionWorker(conn)
 
-	return &URLRepositoryPG{DB: conn, AsyncWorker: asyncWorker}
+	return &URLRepositoryPG{DB: conn, AsyncWorker: asyncWorker}, nil
 }
 
 func (repo URLRepositoryPG) Save(info *entity.ShortenedURLInfo) (string, error) {

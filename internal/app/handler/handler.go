@@ -5,6 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"strings"
+
 	"github.com/apolsh/yapr-url-shortener/internal/app/crypto"
 	"github.com/apolsh/yapr-url-shortener/internal/app/middleware"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository"
@@ -12,10 +17,6 @@ import (
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
 	"github.com/apolsh/yapr-url-shortener/internal/app/service"
 	"github.com/go-chi/chi/v5"
-	"io"
-	"net/http"
-	"net/url"
-	"strings"
 )
 
 type SaveURLBody struct {
@@ -90,7 +91,7 @@ func (h *handler) DeleteShortenURLsInBatch(w http.ResponseWriter, r *http.Reques
 
 	var ids []*string
 
-	if err := json.NewDecoder(reader).Decode(&ids); err != nil {
+	if err := json.NewDecoder(reader).Decode(&ids); err != nil || ids == nil || len(ids) == 0 {
 		http.Error(w, decodeRequestBodyError, http.StatusBadRequest)
 		return
 	}

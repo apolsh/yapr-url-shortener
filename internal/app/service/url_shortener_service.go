@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/dto"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
 )

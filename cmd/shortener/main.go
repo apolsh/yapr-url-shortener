@@ -1,6 +1,9 @@
 package main
 
 import (
+	"log"
+	"net/http"
+
 	"github.com/apolsh/yapr-url-shortener/internal/app/config"
 	"github.com/apolsh/yapr-url-shortener/internal/app/crypto"
 	"github.com/apolsh/yapr-url-shortener/internal/app/handler"
@@ -8,8 +11,6 @@ import (
 	"github.com/apolsh/yapr-url-shortener/internal/app/service"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"log"
-	"net/http"
 )
 
 func main() {
@@ -24,10 +25,14 @@ func main() {
 
 	authCryptoProvider := crypto.NewAESCryptoProvider(cfg.AuthSecretKey)
 	var urlShortenerStorage repository.URLRepository
+	var err error
 	if cfg.DatabaseDSN != "" {
-		urlShortenerStorage = repository.NewURLRepositoryPG(cfg.DatabaseDSN)
+		urlShortenerStorage, err = repository.NewURLRepositoryPG(cfg.DatabaseDSN)
 	} else {
-		urlShortenerStorage = repository.NewURLRepositoryInMemory(cfg.FileStoragePath)
+		urlShortenerStorage, err = repository.NewURLRepositoryInMemory(cfg.FileStoragePath)
+	}
+	if err != nil {
+		panic(err)
 	}
 	defer urlShortenerStorage.Close()
 

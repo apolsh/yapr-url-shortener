@@ -3,9 +3,10 @@ package middleware
 import (
 	"context"
 	"encoding/hex"
+	"net/http"
+
 	"github.com/apolsh/yapr-url-shortener/internal/app/crypto"
 	"github.com/google/uuid"
-	"net/http"
 )
 
 const authCookieName = "sessionId"
