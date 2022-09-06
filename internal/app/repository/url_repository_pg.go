@@ -231,6 +231,9 @@ func setupTable(conn *pgxpool.Pool) error {
 		return err
 	}
 	_, err = tx.Prepare(ctx, preparedSaveBatchStatement, "INSERT INTO shortened_urls (id, original_url, owner, status) VALUES ($1, $2, $3, $4)")
+	if err != nil {
+		return err
+	}
 	_, err = tx.Prepare(ctx, preparedMarkAsDeletedStatement, "UPDATE shortened_urls SET status = 1 WHERE id = $1")
 	if err != nil {
 		return err
