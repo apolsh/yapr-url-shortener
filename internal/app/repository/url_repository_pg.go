@@ -46,12 +46,11 @@ func newAsyncDBTransactionWorker(conn *pgxpool.Pool) *AsyncDBTransactionWorker {
 				if err != nil {
 					log.Println(err)
 				}
-				defer func() {
-					_ = tx.Rollback(ctx)
-				}()
+
 				_, err = tx.Exec(ctx, task.query, task.args...)
 				if err != nil {
 					log.Println(err)
+					_ = tx.Rollback(ctx)
 				}
 
 				if err := tx.Commit(ctx); err != nil {
