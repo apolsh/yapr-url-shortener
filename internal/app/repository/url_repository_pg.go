@@ -78,10 +78,9 @@ func NewURLRepositoryPG(databaseDSN string) URLRepository {
 		panic(err)
 	}
 
-	//asyncWorker := newAsyncDBTransactionWorker(conn)
+	asyncWorker := newAsyncDBTransactionWorker(conn)
 
-	//return &URLRepositoryPG{DB: conn, AsyncWorker: asyncWorker}
-	return &URLRepositoryPG{DB: conn, AsyncWorker: nil}
+	return &URLRepositoryPG{DB: conn, AsyncWorker: asyncWorker}
 }
 
 func (repo URLRepositoryPG) Save(info *entity.ShortenedURLInfo) (string, error) {
@@ -101,14 +100,6 @@ func (repo URLRepositoryPG) Save(info *entity.ShortenedURLInfo) (string, error) 
 		return "", err
 	}
 	return info.GetID(), nil
-}
-
-func (repo *URLRepositoryPG) DeleteURLsInBatch(owner string, ids []*string) error {
-	q := "UPDATE shortened_urls SET status = 1 WHERE owner = $1 AND id = ANY ($2)"
-	task := NewWorkerTask(context.Background(), q, owner, ids)
-	repo.AsyncWorker.executeTask(task)
-
-	return nil
 }
 
 func (repo *URLRepositoryPG) SaveBatch(owner string, batch []*dto.ShortenInBatchRequestItem) ([]*dto.ShortenInBatchResponseItem, error) {
@@ -195,6 +186,14 @@ func (repo *URLRepositoryPG) Ping() bool {
 	}
 }
 
+func (repo *URLRepositoryPG) DeleteURLsInBatch(owner string, ids []*string) error {
+	q := "UPDATE shortened_urls SET status = 1 WHERE owner = $1 AND id = ANY ($2)"
+	task := NewWorkerTask(context.Background(), q, owner, ids)
+	repo.AsyncWorker.executeTask(task)
+
+	return nil
+}
+
 func (repo *URLRepositoryPG) Close() {
 	repo.DB.Close()
 }
@@ -209,7 +208,7 @@ func setupTable(conn *pgxpool.Pool) error {
 		_ = tx.Rollback(ctx)
 	}()
 
-	createTableQ := `create table shortened_urls
+	createTableQ := `create table if not exists shortened_urls
 	(
 		id           varchar(20)        not null,
 		original_url varchar            not null,
