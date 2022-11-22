@@ -1,24 +1,29 @@
 package service
 
 import (
+	"fmt"
+
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/dto"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
 )
 
 type URLShortenerServiceImpl struct {
-	repository repository.URLRepository
+	repository  repository.URLRepository
+	hostAddress string
 }
 
-func NewURLShortenerService(repo repository.URLRepository) URLShortenerService {
-	return &URLShortenerServiceImpl{repository: repo}
+var _ URLShortenerService = new(URLShortenerServiceImpl)
+
+func NewURLShortenerService(repo repository.URLRepository, hostAddress string) *URLShortenerServiceImpl {
+	return &URLShortenerServiceImpl{repository: repo, hostAddress: hostAddress}
 }
 
-func (r URLShortenerServiceImpl) AddNewURL(shortenedURLInfo *entity.ShortenedURLInfo) (string, error) {
+func (r *URLShortenerServiceImpl) AddNewURL(shortenedURLInfo *entity.ShortenedURLInfo) (string, error) {
 	return r.repository.Save(shortenedURLInfo)
 }
 
-func (r URLShortenerServiceImpl) GetURLByID(id string) (string, error) {
+func (r *URLShortenerServiceImpl) GetURLByID(id string) (string, error) {
 	item, err := r.repository.GetByID(id)
 	if item.IsDeleted() {
 		return "", ErrorItemIsDeleted
@@ -26,22 +31,43 @@ func (r URLShortenerServiceImpl) GetURLByID(id string) (string, error) {
 	return item.GetOriginalURL(), err
 }
 
-func (r URLShortenerServiceImpl) GetByOriginalURL(originalURL string) (*entity.ShortenedURLInfo, error) {
+func (r *URLShortenerServiceImpl) GetByOriginalURL(originalURL string) (*entity.ShortenedURLInfo, error) {
 	return r.repository.GetByOriginalURL(originalURL)
 }
 
-func (r URLShortenerServiceImpl) GetURLsByOwnerID(ownerID string) ([]*entity.ShortenedURLInfo, error) {
-	return r.repository.GetAllByOwner(ownerID)
+func (r *URLShortenerServiceImpl) GetURLsByOwnerID(ownerID string) ([]dto.URLPair, error) {
+	urlInfos, err := r.repository.GetAllByOwner(ownerID)
+	if err != nil {
+		return nil, err
+	}
+	urlPairs := make([]dto.URLPair, 0, len(urlInfos))
+	for _, v := range urlInfos {
+		urlPairs = append(urlPairs, v.ToURLPair(r.hostAddress))
+	}
+	return urlPairs, nil
+
 }
 
-func (r URLShortenerServiceImpl) PingDB() bool {
+func (r *URLShortenerServiceImpl) PingDB() bool {
 	return r.repository.Ping()
 }
 
-func (r URLShortenerServiceImpl) AddNewURLsInBatch(owner string, batch []*dto.ShortenInBatchRequestItem) ([]*dto.ShortenInBatchResponseItem, error) {
-	return r.repository.SaveBatch(owner, batch)
+func (r *URLShortenerServiceImpl) AddNewURLsInBatch(owner string, batch []*dto.ShortenInBatchRequestItem) ([]dto.ShortenInBatchResponseItem, error) {
+	correlationToId, err := r.repository.SaveBatch(owner, batch)
+	if err != nil {
+		return nil, err
+	}
+	response := make([]dto.ShortenInBatchResponseItem, 0, len(correlationToId))
+	for k, v := range correlationToId {
+		response = append(response, dto.ShortenInBatchResponseItem{CorrelationID: k, ShortURL: r.GetShortenURLFromId(v)})
+	}
+	return response, nil
 }
 
-func (r URLShortenerServiceImpl) DeleteURLsInBatch(owner string, ids []*string) error {
+func (r *URLShortenerServiceImpl) DeleteURLsInBatch(owner string, ids []string) error {
 	return r.repository.DeleteURLsInBatch(owner, ids)
+}
+
+func (r *URLShortenerServiceImpl) GetShortenURLFromId(id string) string {
+	return fmt.Sprintf("%s/%s", r.hostAddress, id)
 }

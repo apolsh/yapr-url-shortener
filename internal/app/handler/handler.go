@@ -95,8 +95,8 @@ func (h *handler) DeleteShortenURLsInBatch(w http.ResponseWriter, r *http.Reques
 		http.Error(w, decodeRequestBodyError, http.StatusBadRequest)
 		return
 	}
-	ownerID := r.Context().Value(middleware.OwnerID).(string)
-	err = h.service.DeleteURLsInBatch(ownerID, ids)
+	//ownerID := r.Context().Value(middleware.OwnerID).(string)
+	//err = h.service.DeleteURLsInBatch(ownerID, ids)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -181,9 +181,9 @@ func (h *handler) GetUserURLsHandler(w http.ResponseWriter, r *http.Request) {
 
 	responseBody := make([]*GetUserURLsResponse, 0, len(shortenedURLSInfos))
 
-	for _, info := range shortenedURLSInfos {
-		responseBody = append(responseBody, NewGetUserURLsResponse(h.createShortURLFromID(info.GetID()), info.GetOriginalURL()))
-	}
+	//for _, info := range shortenedURLSInfos {
+	//	responseBody = append(responseBody, NewGetUserURLsResponse(h.createShortURLFromID(info.GetID()), info.GetOriginalURL()))
+	//}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)

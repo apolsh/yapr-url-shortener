@@ -11,7 +11,7 @@ import (
 type URLRepository interface {
 	Save(shortenedInfo *entity.ShortenedURLInfo) (string, error)
 
-	SaveBatch(owner string, batch []*dto.ShortenInBatchRequestItem) ([]*dto.ShortenInBatchResponseItem, error)
+	SaveBatch(owner string, batch []*dto.ShortenInBatchRequestItem) (map[string]string, error)
 
 	GetByID(id string) (*entity.ShortenedURLInfo, error)
 
@@ -23,7 +23,7 @@ type URLRepository interface {
 
 	Ping() bool
 
-	DeleteURLsInBatch(owner string, ids []*string) error
+	DeleteURLsInBatch(owner string, ids []string) error
 }
 
 var ErrorItemNotFound = errors.New("item not found")

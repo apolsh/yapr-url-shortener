@@ -111,20 +111,20 @@ func (r *URLRepositoryInMemory) update(shortenedInfo *entity.ShortenedURLInfo) (
 	return shortenedInfo.GetID(), nil
 }
 
-func (r *URLRepositoryInMemory) SaveBatch(owner string, batch []*dto.ShortenInBatchRequestItem) ([]*dto.ShortenInBatchResponseItem, error) {
-	response := make([]*dto.ShortenInBatchResponseItem, 0, len(batch))
+func (r *URLRepositoryInMemory) SaveBatch(owner string, batch []*dto.ShortenInBatchRequestItem) (map[string]string, error) {
+	response := make(map[string]string, len(batch))
 	for _, item := range batch {
 		info := entity.NewUnstoredShortenedURLInfo(owner, item.OriginalURL)
 		id, _ := r.Save(info)
-		response = append(response, &dto.ShortenInBatchResponseItem{CorrelationID: item.CorrelationID, ShortURL: id})
+		response[item.CorrelationID] = id
 	}
 
 	return response, nil
 }
 
-func (r *URLRepositoryInMemory) DeleteURLsInBatch(owner string, ids []*string) error {
+func (r *URLRepositoryInMemory) DeleteURLsInBatch(owner string, ids []string) error {
 	for _, id := range ids {
-		urlEntity, isFound := r.Storage[*id]
+		urlEntity, isFound := r.Storage[id]
 		if isFound && urlEntity.GetOwner() == owner {
 			urlEntity.SetDeleted()
 			_, err := r.update(urlEntity)

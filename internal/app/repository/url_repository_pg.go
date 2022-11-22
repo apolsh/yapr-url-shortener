@@ -103,7 +103,7 @@ func (repo URLRepositoryPG) Save(info *entity.ShortenedURLInfo) (string, error) 
 	return info.GetID(), nil
 }
 
-func (repo *URLRepositoryPG) SaveBatch(owner string, batch []*dto.ShortenInBatchRequestItem) ([]*dto.ShortenInBatchResponseItem, error) {
+func (repo *URLRepositoryPG) SaveBatch(owner string, batch []*dto.ShortenInBatchRequestItem) (map[string]string, error) {
 	ctx := context.Background()
 	tx, err := repo.DB.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
@@ -113,16 +113,18 @@ func (repo *URLRepositoryPG) SaveBatch(owner string, batch []*dto.ShortenInBatch
 		_ = tx.Rollback(ctx)
 	}()
 
-	response := make([]*dto.ShortenInBatchResponseItem, 0, len(batch))
+	response := make(map[string]string, len(batch))
+
+	//response := make([]*dto.ShortenInBatchResponseItem, 0, len(batch))
 	var id string
 	for _, requestItem := range batch {
 		id = nextID()
-		responseItem := &dto.ShortenInBatchResponseItem{CorrelationID: requestItem.CorrelationID, ShortURL: id}
+		//responseItem := &dto.ShortenInBatchResponseItem{CorrelationID: requestItem.CorrelationID, ShortURL: id}
 		_, err := tx.Exec(ctx, preparedSaveBatchStatement, id, requestItem.OriginalURL, owner, 0)
 		if err != nil {
 			return nil, err
 		}
-		response = append(response, responseItem)
+		response[requestItem.CorrelationID] = id
 	}
 
 	if err := tx.Commit(ctx); err != nil {
@@ -187,7 +189,7 @@ func (repo *URLRepositoryPG) Ping() bool {
 	}
 }
 
-func (repo *URLRepositoryPG) DeleteURLsInBatch(owner string, ids []*string) error {
+func (repo *URLRepositoryPG) DeleteURLsInBatch(owner string, ids []string) error {
 	q := "UPDATE shortened_urls SET status = 1 WHERE owner = $1 AND id = ANY ($2)"
 	task := NewWorkerTask(context.Background(), q, owner, ids)
 	repo.AsyncWorker.executeTask(task)
