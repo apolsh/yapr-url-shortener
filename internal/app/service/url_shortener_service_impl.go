@@ -21,6 +21,8 @@ func NewURLShortenerService(repo repository.URLRepository, hostAddress string) *
 }
 
 func (r *URLShortenerServiceImpl) AddNewURL(shortenedURLInfo entity.ShortenedURLInfo) (string, error) {
+	log.Println("service ADD:")
+	log.Println(shortenedURLInfo)
 	return r.repository.Save(shortenedURLInfo)
 }
 

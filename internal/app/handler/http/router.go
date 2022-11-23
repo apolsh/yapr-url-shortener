@@ -118,6 +118,7 @@ func (c *controller) SaveShortenURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	urlString, err := extractTextBody(r)
+	log.Println("SaveShortenURL: " + urlString)
 	if err != nil {
 		http.Error(w, bodyReadingError, http.StatusInternalServerError)
 		return
@@ -189,7 +190,11 @@ func (c *controller) SaveShortenURLJSON(w http.ResponseWriter, r *http.Request) 
 	}
 	ownerID := r.Context().Value(customMiddleware.OwnerID).(string)
 	statusCode := 201
-	urlID, err := c.shortenService.AddNewURL(*entity.NewUnstoredShortenedURLInfo(ownerID, body.URL))
+	info := *entity.NewUnstoredShortenedURLInfo(ownerID, body.URL)
+	log.Println("SaveShortenURL: ")
+	log.Println(info)
+
+	urlID, err := c.shortenService.AddNewURL(info)
 	if err != nil {
 		if errors.Is(err, repository.ErrorURLAlreadyStored) {
 			info, err := c.shortenService.GetByOriginalURL(body.URL)
