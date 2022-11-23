@@ -85,6 +85,7 @@ func (c *controller) GetShortenURLByID(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "", http.StatusGone)
 			return
 		}
+		log.Println(foundURL)
 		http.Redirect(w, r, foundURL, http.StatusTemporaryRedirect)
 		return
 	}
