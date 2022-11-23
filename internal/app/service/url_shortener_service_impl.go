@@ -26,7 +26,9 @@ func (r *URLShortenerServiceImpl) AddNewURL(shortenedURLInfo entity.ShortenedURL
 
 func (r *URLShortenerServiceImpl) GetURLByID(id string) (string, error) {
 	item, err := r.repository.GetByID(id)
+	log.Println("item:")
 	log.Println(item)
+	log.Println("original URL: " + item.OriginalURL)
 	if item.IsDeleted() {
 		return "", ErrorItemIsDeleted
 	}
