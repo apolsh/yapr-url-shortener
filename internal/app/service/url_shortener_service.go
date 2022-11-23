@@ -8,13 +8,13 @@ import (
 )
 
 type URLShortenerService interface {
-	AddNewURL(shortenedURLInfo *entity.ShortenedURLInfo) (string, error)
+	AddNewURL(shortenedURLInfo entity.ShortenedURLInfo) (string, error)
 
-	AddNewURLsInBatch(owner string, batch []*dto.ShortenInBatchRequestItem) ([]dto.ShortenInBatchResponseItem, error)
+	AddNewURLsInBatch(owner string, batch []dto.ShortenInBatchRequestItem) ([]dto.ShortenInBatchResponseItem, error)
 
 	GetURLByID(id string) (string, error)
 
-	GetByOriginalURL(url string) (*entity.ShortenedURLInfo, error)
+	GetByOriginalURL(url string) (entity.ShortenedURLInfo, error)
 
 	GetURLsByOwnerID(ownerID string) ([]dto.URLPair, error)
 

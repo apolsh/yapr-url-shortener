@@ -129,7 +129,7 @@ func (c *controller) SaveShortenURL(w http.ResponseWriter, r *http.Request) {
 	var urlID string
 	statusCode := 201
 	ownerID := r.Context().Value(customMiddleware.OwnerID).(string)
-	urlID, err = c.shortenService.AddNewURL(entity.NewUnstoredShortenedURLInfo(ownerID, urlString))
+	urlID, err = c.shortenService.AddNewURL(*entity.NewUnstoredShortenedURLInfo(ownerID, urlString))
 	if err != nil {
 		if errors.Is(err, repository.ErrorURLAlreadyStored) {
 			info, err := c.shortenService.GetByOriginalURL(urlString)
@@ -150,7 +150,7 @@ func (c *controller) SaveShortenURL(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *controller) SaveShortenURLsInBatch(w http.ResponseWriter, r *http.Request) {
-	var body []*dto.ShortenInBatchRequestItem
+	var body []dto.ShortenInBatchRequestItem
 
 	err := extractJSONBody(r, &body)
 	if err != nil {
@@ -187,7 +187,7 @@ func (c *controller) SaveShortenURLJSON(w http.ResponseWriter, r *http.Request) 
 	}
 	ownerID := r.Context().Value(customMiddleware.OwnerID).(string)
 	statusCode := 201
-	urlID, err := c.shortenService.AddNewURL(entity.NewUnstoredShortenedURLInfo(ownerID, body.URL))
+	urlID, err := c.shortenService.AddNewURL(*entity.NewUnstoredShortenedURLInfo(ownerID, body.URL))
 	if err != nil {
 		if errors.Is(err, repository.ErrorURLAlreadyStored) {
 			info, err := c.shortenService.GetByOriginalURL(body.URL)
@@ -237,17 +237,6 @@ func isValidContentType(r *http.Request, allowedTypes ...string) bool {
 		}
 	}
 	return false
-}
-
-func getBodyReader(r *http.Request) (io.ReadCloser, error) {
-	if r.Header.Get(`Content-Encoding`) == `gzip` {
-		gz, err := gzip.NewReader(r.Body)
-		if err != nil {
-			return nil, err
-		}
-		return gz, nil
-	}
-	return r.Body, nil
 }
 
 func extractJSONBody(r *http.Request, v interface{}) error {

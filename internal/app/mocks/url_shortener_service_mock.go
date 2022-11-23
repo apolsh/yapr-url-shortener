@@ -36,7 +36,7 @@ func (m *MockURLShortenerService) EXPECT() *MockURLShortenerServiceMockRecorder 
 }
 
 // AddNewURL mocks base method.
-func (m *MockURLShortenerService) AddNewURL(arg0 *entity.ShortenedURLInfo) (string, error) {
+func (m *MockURLShortenerService) AddNewURL(arg0 entity.ShortenedURLInfo) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddNewURL", arg0)
 	ret0, _ := ret[0].(string)
@@ -51,10 +51,10 @@ func (mr *MockURLShortenerServiceMockRecorder) AddNewURL(arg0 interface{}) *gomo
 }
 
 // AddNewURLsInBatch mocks base method.
-func (m *MockURLShortenerService) AddNewURLsInBatch(arg0 string, arg1 []*dto.ShortenInBatchRequestItem) ([]*dto.ShortenInBatchResponseItem, error) {
+func (m *MockURLShortenerService) AddNewURLsInBatch(arg0 string, arg1 []dto.ShortenInBatchRequestItem) ([]dto.ShortenInBatchResponseItem, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddNewURLsInBatch", arg0, arg1)
-	ret0, _ := ret[0].([]*dto.ShortenInBatchResponseItem)
+	ret0, _ := ret[0].([]dto.ShortenInBatchResponseItem)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -66,7 +66,7 @@ func (mr *MockURLShortenerServiceMockRecorder) AddNewURLsInBatch(arg0, arg1 inte
 }
 
 // DeleteURLsInBatch mocks base method.
-func (m *MockURLShortenerService) DeleteURLsInBatch(arg0 string, arg1 []*string) error {
+func (m *MockURLShortenerService) DeleteURLsInBatch(arg0 string, arg1 []string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteURLsInBatch", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -80,10 +80,10 @@ func (mr *MockURLShortenerServiceMockRecorder) DeleteURLsInBatch(arg0, arg1 inte
 }
 
 // GetByOriginalURL mocks base method.
-func (m *MockURLShortenerService) GetByOriginalURL(arg0 string) (*entity.ShortenedURLInfo, error) {
+func (m *MockURLShortenerService) GetByOriginalURL(arg0 string) (entity.ShortenedURLInfo, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetByOriginalURL", arg0)
-	ret0, _ := ret[0].(*entity.ShortenedURLInfo)
+	ret0, _ := ret[0].(entity.ShortenedURLInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -92,6 +92,20 @@ func (m *MockURLShortenerService) GetByOriginalURL(arg0 string) (*entity.Shorten
 func (mr *MockURLShortenerServiceMockRecorder) GetByOriginalURL(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByOriginalURL", reflect.TypeOf((*MockURLShortenerService)(nil).GetByOriginalURL), arg0)
+}
+
+// GetShortenURLFromId mocks base method.
+func (m *MockURLShortenerService) GetShortenURLFromId(arg0 string) string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetShortenURLFromId", arg0)
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetShortenURLFromId indicates an expected call of GetShortenURLFromId.
+func (mr *MockURLShortenerServiceMockRecorder) GetShortenURLFromId(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetShortenURLFromId", reflect.TypeOf((*MockURLShortenerService)(nil).GetShortenURLFromId), arg0)
 }
 
 // GetURLByID mocks base method.
@@ -110,10 +124,10 @@ func (mr *MockURLShortenerServiceMockRecorder) GetURLByID(arg0 interface{}) *gom
 }
 
 // GetURLsByOwnerID mocks base method.
-func (m *MockURLShortenerService) GetURLsByOwnerID(arg0 string) ([]*entity.ShortenedURLInfo, error) {
+func (m *MockURLShortenerService) GetURLsByOwnerID(arg0 string) ([]dto.URLPair, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetURLsByOwnerID", arg0)
-	ret0, _ := ret[0].([]*entity.ShortenedURLInfo)
+	ret0, _ := ret[0].([]dto.URLPair)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

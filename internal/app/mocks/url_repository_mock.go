@@ -48,7 +48,7 @@ func (mr *MockURLRepositoryMockRecorder) Close() *gomock.Call {
 }
 
 // DeleteURLsInBatch mocks base method.
-func (m *MockURLRepository) DeleteURLsInBatch(arg0 string, arg1 []*string) error {
+func (m *MockURLRepository) DeleteURLsInBatch(arg0 string, arg1 []string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteURLsInBatch", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -62,10 +62,10 @@ func (mr *MockURLRepositoryMockRecorder) DeleteURLsInBatch(arg0, arg1 interface{
 }
 
 // GetAllByOwner mocks base method.
-func (m *MockURLRepository) GetAllByOwner(arg0 string) ([]*entity.ShortenedURLInfo, error) {
+func (m *MockURLRepository) GetAllByOwner(arg0 string) ([]entity.ShortenedURLInfo, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllByOwner", arg0)
-	ret0, _ := ret[0].([]*entity.ShortenedURLInfo)
+	ret0, _ := ret[0].([]entity.ShortenedURLInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -77,10 +77,10 @@ func (mr *MockURLRepositoryMockRecorder) GetAllByOwner(arg0 interface{}) *gomock
 }
 
 // GetByID mocks base method.
-func (m *MockURLRepository) GetByID(arg0 string) (*entity.ShortenedURLInfo, error) {
+func (m *MockURLRepository) GetByID(arg0 string) (entity.ShortenedURLInfo, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetByID", arg0)
-	ret0, _ := ret[0].(*entity.ShortenedURLInfo)
+	ret0, _ := ret[0].(entity.ShortenedURLInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -92,10 +92,10 @@ func (mr *MockURLRepositoryMockRecorder) GetByID(arg0 interface{}) *gomock.Call 
 }
 
 // GetByOriginalURL mocks base method.
-func (m *MockURLRepository) GetByOriginalURL(arg0 string) (*entity.ShortenedURLInfo, error) {
+func (m *MockURLRepository) GetByOriginalURL(arg0 string) (entity.ShortenedURLInfo, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetByOriginalURL", arg0)
-	ret0, _ := ret[0].(*entity.ShortenedURLInfo)
+	ret0, _ := ret[0].(entity.ShortenedURLInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -121,7 +121,7 @@ func (mr *MockURLRepositoryMockRecorder) Ping() *gomock.Call {
 }
 
 // Save mocks base method.
-func (m *MockURLRepository) Save(arg0 *entity.ShortenedURLInfo) (string, error) {
+func (m *MockURLRepository) Save(arg0 entity.ShortenedURLInfo) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Save", arg0)
 	ret0, _ := ret[0].(string)
@@ -136,10 +136,10 @@ func (mr *MockURLRepositoryMockRecorder) Save(arg0 interface{}) *gomock.Call {
 }
 
 // SaveBatch mocks base method.
-func (m *MockURLRepository) SaveBatch(arg0 string, arg1 []*dto.ShortenInBatchRequestItem) ([]*dto.ShortenInBatchResponseItem, error) {
+func (m *MockURLRepository) SaveBatch(arg0 string, arg1 []dto.ShortenInBatchRequestItem) (map[string]string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SaveBatch", arg0, arg1)
-	ret0, _ := ret[0].([]*dto.ShortenInBatchResponseItem)
+	ret0, _ := ret[0].(map[string]string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

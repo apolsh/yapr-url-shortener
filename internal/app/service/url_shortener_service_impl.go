@@ -19,7 +19,7 @@ func NewURLShortenerService(repo repository.URLRepository, hostAddress string) *
 	return &URLShortenerServiceImpl{repository: repo, hostAddress: hostAddress}
 }
 
-func (r *URLShortenerServiceImpl) AddNewURL(shortenedURLInfo *entity.ShortenedURLInfo) (string, error) {
+func (r *URLShortenerServiceImpl) AddNewURL(shortenedURLInfo entity.ShortenedURLInfo) (string, error) {
 	return r.repository.Save(shortenedURLInfo)
 }
 
@@ -31,7 +31,7 @@ func (r *URLShortenerServiceImpl) GetURLByID(id string) (string, error) {
 	return item.GetOriginalURL(), err
 }
 
-func (r *URLShortenerServiceImpl) GetByOriginalURL(originalURL string) (*entity.ShortenedURLInfo, error) {
+func (r *URLShortenerServiceImpl) GetByOriginalURL(originalURL string) (entity.ShortenedURLInfo, error) {
 	return r.repository.GetByOriginalURL(originalURL)
 }
 
@@ -52,7 +52,7 @@ func (r *URLShortenerServiceImpl) PingDB() bool {
 	return r.repository.Ping()
 }
 
-func (r *URLShortenerServiceImpl) AddNewURLsInBatch(owner string, batch []*dto.ShortenInBatchRequestItem) ([]dto.ShortenInBatchResponseItem, error) {
+func (r *URLShortenerServiceImpl) AddNewURLsInBatch(owner string, batch []dto.ShortenInBatchRequestItem) ([]dto.ShortenInBatchResponseItem, error) {
 	correlationToId, err := r.repository.SaveBatch(owner, batch)
 	if err != nil {
 		return nil, err

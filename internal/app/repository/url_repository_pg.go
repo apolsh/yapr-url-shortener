@@ -84,12 +84,12 @@ func NewURLRepositoryPG(databaseDSN string) (URLRepository, error) {
 	return &URLRepositoryPG{DB: conn, AsyncWorker: asyncWorker}, nil
 }
 
-func (repo URLRepositoryPG) Save(info *entity.ShortenedURLInfo) (string, error) {
-	info.ID = nextID()
+func (repo URLRepositoryPG) Save(shortenedInfo entity.ShortenedURLInfo) (string, error) {
+	shortenedInfo.ID = nextID()
 
 	q := "INSERT INTO shortened_urls (id, original_url, owner, status) VALUES ($1, $2, $3, $4)"
 
-	_, err := repo.DB.Exec(context.Background(), q, info.GetID(), info.GetOriginalURL(), info.GetOwner(), info.GetStatus())
+	_, err := repo.DB.Exec(context.Background(), q, shortenedInfo.GetID(), shortenedInfo.GetOriginalURL(), shortenedInfo.GetOwner(), shortenedInfo.GetStatus())
 
 	var pgErr *pgconn.PgError
 	if err != nil {
@@ -100,10 +100,10 @@ func (repo URLRepositoryPG) Save(info *entity.ShortenedURLInfo) (string, error) 
 		}
 		return "", err
 	}
-	return info.GetID(), nil
+	return shortenedInfo.GetID(), nil
 }
 
-func (repo *URLRepositoryPG) SaveBatch(owner string, batch []*dto.ShortenInBatchRequestItem) (map[string]string, error) {
+func (repo *URLRepositoryPG) SaveBatch(owner string, batch []dto.ShortenInBatchRequestItem) (map[string]string, error) {
 	ctx := context.Background()
 	tx, err := repo.DB.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
@@ -133,31 +133,31 @@ func (repo *URLRepositoryPG) SaveBatch(owner string, batch []*dto.ShortenInBatch
 	return response, nil
 }
 
-func (repo URLRepositoryPG) GetByID(id string) (*entity.ShortenedURLInfo, error) {
+func (repo URLRepositoryPG) GetByID(id string) (entity.ShortenedURLInfo, error) {
 	q := "SELECT id, original_url, owner, status FROM shortened_urls WHERE id=$1"
 	var info entity.ShortenedURLInfo
 	err := repo.DB.QueryRow(context.Background(), q, id).Scan(&info.ID, &info.OriginalURL, &info.Owner, &info.Status)
 
 	if err != nil {
-		return nil, err
+		return entity.ShortenedURLInfo{}, err
 	}
 
-	return &info, nil
+	return info, nil
 }
 
-func (repo URLRepositoryPG) GetByOriginalURL(url string) (*entity.ShortenedURLInfo, error) {
+func (repo URLRepositoryPG) GetByOriginalURL(url string) (entity.ShortenedURLInfo, error) {
 	q := "SELECT id, original_url, owner, status FROM shortened_urls WHERE original_url=$1"
 	var info entity.ShortenedURLInfo
 	err := repo.DB.QueryRow(context.Background(), q, url).Scan(&info.ID, &info.OriginalURL, &info.Owner, &info.Status)
 
 	if err != nil {
-		return nil, err
+		return entity.ShortenedURLInfo{}, err
 	}
 
-	return &info, nil
+	return info, nil
 }
 
-func (repo URLRepositoryPG) GetAllByOwner(owner string) ([]*entity.ShortenedURLInfo, error) {
+func (repo URLRepositoryPG) GetAllByOwner(owner string) ([]entity.ShortenedURLInfo, error) {
 	q := "SELECT id, original_url, owner, status FROM shortened_urls WHERE owner=$1"
 
 	rows, err := repo.DB.Query(context.Background(), q, owner)
@@ -165,7 +165,7 @@ func (repo URLRepositoryPG) GetAllByOwner(owner string) ([]*entity.ShortenedURLI
 		return nil, err
 	}
 
-	infos := make([]*entity.ShortenedURLInfo, 0)
+	infos := make([]entity.ShortenedURLInfo, 0)
 
 	for rows.Next() {
 		var info entity.ShortenedURLInfo
@@ -173,7 +173,7 @@ func (repo URLRepositoryPG) GetAllByOwner(owner string) ([]*entity.ShortenedURLI
 		if err != nil {
 			return nil, err
 		}
-		infos = append(infos, &info)
+		infos = append(infos, info)
 	}
 
 	return infos, nil
