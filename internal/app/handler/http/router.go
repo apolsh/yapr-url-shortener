@@ -85,7 +85,6 @@ func (c *controller) GetShortenURLByID(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "", http.StatusGone)
 			return
 		}
-		log.Println("Found url:" + foundURL)
 		http.Redirect(w, r, foundURL, http.StatusTemporaryRedirect)
 		return
 	}
@@ -118,16 +117,15 @@ func (c *controller) SaveShortenURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	urlString, err := extractTextBody(r)
-	log.Println("SaveShortenURL: " + urlString)
 	if err != nil {
 		http.Error(w, bodyReadingError, http.StatusInternalServerError)
 		return
 	}
-	//_, err = url.ParseRequestURI(urlString)
-	//if err != nil {
-	//	http.Error(w, parseURLError, http.StatusBadRequest)
-	//	return
-	//}
+	_, err = url.ParseRequestURI(urlString)
+	if err != nil {
+		http.Error(w, parseURLError, http.StatusBadRequest)
+		return
+	}
 
 	var urlID string
 	statusCode := 201
@@ -191,8 +189,6 @@ func (c *controller) SaveShortenURLJSON(w http.ResponseWriter, r *http.Request) 
 	ownerID := r.Context().Value(customMiddleware.OwnerID).(string)
 	statusCode := 201
 	info := *entity.NewUnstoredShortenedURLInfo(ownerID, body.URL)
-	log.Println("SaveShortenURL: ")
-	log.Println(info)
 
 	urlID, err := c.shortenService.AddNewURL(info)
 	if err != nil {
@@ -277,8 +273,9 @@ func extractTextBody(r *http.Request) (string, error) {
 			return "", err
 		}
 		reader = gz
+	} else {
+		reader = r.Body
 	}
-	reader = r.Body
 	defer func(reader io.ReadCloser) {
 		err := reader.Close()
 		if err != nil {
