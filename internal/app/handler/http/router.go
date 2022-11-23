@@ -53,7 +53,7 @@ func NewRouter(r *chi.Mux, serviceImpl service.URLShortenerService, provider cry
 			r.Get("/api/user/urls", c.GetShortenURLsByUser)
 			r.Post("/", c.SaveShortenURL)
 		})
-		r.With(customMiddleware.JsonFilterMiddleware).Group(func(r chi.Router) {
+		r.With(customMiddleware.JSONFilterMiddleware).Group(func(r chi.Router) {
 			r.Route("/api", func(r chi.Router) {
 				r.Post("/shorten/batch", c.SaveShortenURLsInBatch)
 				r.Post("/shorten", c.SaveShortenURLJSON)
@@ -143,7 +143,7 @@ func (c *controller) SaveShortenURL(w http.ResponseWriter, r *http.Request) {
 	}
 	setContentType(w, "text/plain; charset=utf-8")
 	w.WriteHeader(statusCode)
-	_, err = w.Write([]byte(c.shortenService.GetShortenURLFromId(urlID)))
+	_, err = w.Write([]byte(c.shortenService.GetShortenURLFromID(urlID)))
 	if err != nil {
 		http.Error(w, encodeResponseBodyError, http.StatusInternalServerError)
 	}
@@ -201,7 +201,7 @@ func (c *controller) SaveShortenURLJSON(w http.ResponseWriter, r *http.Request) 
 	}
 	setContentType(w, applicationJSON)
 	w.WriteHeader(statusCode)
-	if err := json.NewEncoder(w).Encode(&SaveURLResponse{Result: c.shortenService.GetShortenURLFromId(urlID)}); err != nil {
+	if err := json.NewEncoder(w).Encode(&SaveURLResponse{Result: c.shortenService.GetShortenURLFromID(urlID)}); err != nil {
 		http.Error(w, encodeResponseBodyError, http.StatusInternalServerError)
 	}
 }

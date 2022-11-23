@@ -53,13 +53,13 @@ func (r *URLShortenerServiceImpl) PingDB() bool {
 }
 
 func (r *URLShortenerServiceImpl) AddNewURLsInBatch(owner string, batch []dto.ShortenInBatchRequestItem) ([]dto.ShortenInBatchResponseItem, error) {
-	correlationToId, err := r.repository.SaveBatch(owner, batch)
+	correlationToID, err := r.repository.SaveBatch(owner, batch)
 	if err != nil {
 		return nil, err
 	}
-	response := make([]dto.ShortenInBatchResponseItem, 0, len(correlationToId))
-	for k, v := range correlationToId {
-		response = append(response, dto.ShortenInBatchResponseItem{CorrelationID: k, ShortURL: r.GetShortenURLFromId(v)})
+	response := make([]dto.ShortenInBatchResponseItem, 0, len(correlationToID))
+	for k, v := range correlationToID {
+		response = append(response, dto.ShortenInBatchResponseItem{CorrelationID: k, ShortURL: r.GetShortenURLFromID(v)})
 	}
 	return response, nil
 }
@@ -68,6 +68,6 @@ func (r *URLShortenerServiceImpl) DeleteURLsInBatch(owner string, ids []string) 
 	return r.repository.DeleteURLsInBatch(owner, ids)
 }
 
-func (r *URLShortenerServiceImpl) GetShortenURLFromId(id string) string {
+func (r *URLShortenerServiceImpl) GetShortenURLFromID(id string) string {
 	return fmt.Sprintf("%s/%s", r.hostAddress, id)
 }

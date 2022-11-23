@@ -22,7 +22,7 @@ type URLShortenerService interface {
 
 	DeleteURLsInBatch(owner string, ids []string) error
 
-	GetShortenURLFromId(id string) string
+	GetShortenURLFromID(id string) string
 }
 
 var ErrorItemIsDeleted = errors.New("item is marked as deleted")
