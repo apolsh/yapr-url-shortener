@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -120,11 +121,11 @@ func (c *controller) SaveShortenURL(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, bodyReadingError, http.StatusInternalServerError)
 		return
 	}
-	_, err = url.ParseRequestURI(urlString)
-	if err != nil {
-		http.Error(w, parseURLError, http.StatusBadRequest)
-		return
-	}
+	//_, err = url.ParseRequestURI(urlString)
+	//if err != nil {
+	//	http.Error(w, parseURLError, http.StatusBadRequest)
+	//	return
+	//}
 
 	var urlID string
 	statusCode := 201
@@ -252,6 +253,7 @@ func extractJSONBody(r *http.Request, v interface{}) error {
 	defer func(reader io.ReadCloser) {
 		err := reader.Close()
 		if err != nil {
+			log.Println(err.Error())
 			//log.Err(err).Msg(err.Error())
 		}
 	}(reader)
@@ -274,6 +276,7 @@ func extractTextBody(r *http.Request) (string, error) {
 	defer func(reader io.ReadCloser) {
 		err := reader.Close()
 		if err != nil {
+			log.Println(err.Error())
 			//log.Err(err).Msg(err.Error())
 		}
 	}(reader)
