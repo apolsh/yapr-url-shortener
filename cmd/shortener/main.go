@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	_ "net/http/pprof"
 
 	"github.com/apolsh/yapr-url-shortener/internal/app/config"
 	"github.com/apolsh/yapr-url-shortener/internal/app/crypto"
@@ -10,6 +11,7 @@ import (
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository"
 	"github.com/apolsh/yapr-url-shortener/internal/app/service"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 func main() {
@@ -32,6 +34,8 @@ func main() {
 
 	urlShortenerService := service.NewURLShortenerService(urlShortenerStorage, cfg.BaseURL)
 	httpRouter.NewRouter(router, urlShortenerService, authCryptoProvider)
+
+	router.Mount("/debug", middleware.Profiler())
 
 	log.Fatal(http.ListenAndServe(cfg.ServerAddress, router))
 }

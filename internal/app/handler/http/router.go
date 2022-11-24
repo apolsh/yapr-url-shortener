@@ -44,7 +44,7 @@ func NewRouter(r *chi.Mux, serviceImpl service.URLShortenerService, provider cry
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Use(customMiddleware.CompressResponse)
+	r.Use(middleware.Compress(5))
 	r.Use(customMiddleware.AuthMiddleware(provider))
 
 	r.Route("/", func(r chi.Router) {
