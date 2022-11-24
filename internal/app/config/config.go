@@ -6,6 +6,7 @@ import (
 	"github.com/caarlos0/env"
 )
 
+// Config конфигурационные данные приложения
 type Config struct {
 	ServerAddress   string `env:"SERVER_ADDRESS" envDefault:"localhost:8080"`
 	BaseURL         string `env:"BASE_URL" envDefault:"http://localhost:8080"`
@@ -14,6 +15,7 @@ type Config struct {
 	DatabaseDSN     string `env:"DATABASE_DSN" envDefault:"postgresql://yaprurlshortener:yaPR_ttuss@localhost:5432/yapr-url-shortener"`
 }
 
+// Load считывает переменные окружения и флаги, приоритет отдается флагам
 func Load() Config {
 	var cfg Config
 	if err := env.Parse(&cfg); err != nil {

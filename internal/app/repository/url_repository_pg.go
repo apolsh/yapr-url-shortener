@@ -71,6 +71,8 @@ type URLRepositoryPG struct {
 	AsyncWorker *AsyncDBTransactionWorker
 }
 
+// NewURLRepositoryPG хранилище URL в СУБД Postgres, при создании происходит выполнения скрипта создания
+// необходимых таблиц, а так же создается асинхронный воркер, который может выполнять запросы к БД в асинхронном режиме
 func NewURLRepositoryPG(databaseDSN string) (URLRepository, error) {
 	conn, err := pgxpool.Connect(context.Background(), databaseDSN)
 	if err != nil {

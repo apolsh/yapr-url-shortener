@@ -65,7 +65,8 @@ func NewRouter(r *chi.Mux, serviceImpl service.URLShortenerService, provider cry
 
 }
 
-func (c *controller) PingDB(w http.ResponseWriter, r *http.Request) {
+// PingDB проверяет работу хранилища URL
+func (c *controller) PingDB(w http.ResponseWriter, _ *http.Request) {
 	ok := c.shortenService.PingDB()
 	if ok {
 		w.WriteHeader(200)
@@ -74,6 +75,7 @@ func (c *controller) PingDB(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetShortenURLByID производит редирект на сохраненный ранее в хранилище URL
 func (c *controller) GetShortenURLByID(w http.ResponseWriter, r *http.Request) {
 	if urlID := chi.URLParam(r, "urlID"); urlID != "" {
 		foundURL, err := c.shortenService.GetURLByID(urlID)
@@ -91,6 +93,7 @@ func (c *controller) GetShortenURLByID(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Invalid parameter", http.StatusMethodNotAllowed)
 }
 
+// GetShortenURLsByUser возвращает список пар (короткий + длинный) URL пользователя
 func (c *controller) GetShortenURLsByUser(w http.ResponseWriter, r *http.Request) {
 	ownerID := r.Context().Value(customMiddleware.OwnerID).(string)
 	urlPairs, err := c.shortenService.GetURLsByOwnerID(ownerID)
@@ -110,6 +113,7 @@ func (c *controller) GetShortenURLsByUser(w http.ResponseWriter, r *http.Request
 	}
 }
 
+// SaveShortenURL принимает запрос в виде простого текста, сохраняет URL в хранилище
 func (c *controller) SaveShortenURL(w http.ResponseWriter, r *http.Request) {
 	if !isValidContentType(r, "text/plain", "text", "application/x-gzip") {
 		http.Error(w, invalidContentTypeError, http.StatusBadRequest)
@@ -150,6 +154,7 @@ func (c *controller) SaveShortenURL(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// SaveShortenURLsInBatch сохраняет сразу несколько URL в хранилище за один запрос
 func (c *controller) SaveShortenURLsInBatch(w http.ResponseWriter, r *http.Request) {
 	var body []dto.ShortenInBatchRequestItem
 
@@ -173,6 +178,7 @@ func (c *controller) SaveShortenURLsInBatch(w http.ResponseWriter, r *http.Reque
 	}
 }
 
+// SaveShortenURLJSON принимает запрос в виде JSON, сохраняет URL в хранилище
 func (c *controller) SaveShortenURLJSON(w http.ResponseWriter, r *http.Request) {
 	var body SaveURLBody
 	err := extractJSONBody(r, &body)
@@ -209,6 +215,7 @@ func (c *controller) SaveShortenURLJSON(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+// DeleteShortenURLsInBatch помечает URL в хранилище как удаленный
 func (c *controller) DeleteShortenURLsInBatch(w http.ResponseWriter, r *http.Request) {
 	var ids []string
 	err := extractJSONBody(r, &ids)
