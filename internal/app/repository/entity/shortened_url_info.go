@@ -1,5 +1,11 @@
 package entity
 
+import (
+	"fmt"
+
+	"github.com/apolsh/yapr-url-shortener/internal/app/repository/dto"
+)
+
 const (
 	Active = iota
 	Deleted
@@ -16,32 +22,36 @@ func NewShortenedURLInfo(id, owner, originalURL string) *ShortenedURLInfo {
 	return &ShortenedURLInfo{ID: id, Owner: owner, OriginalURL: originalURL}
 }
 
-func (shortenedURL ShortenedURLInfo) GetOwner() string {
-	return shortenedURL.Owner
+func (s *ShortenedURLInfo) ToURLPair(hostURL string) dto.URLPair {
+	return dto.URLPair{OriginalURL: s.OriginalURL, ShortURL: fmt.Sprintf("%s/%s", hostURL, s.ID)}
 }
 
-func (shortenedURL ShortenedURLInfo) GetOriginalURL() string {
-	return shortenedURL.OriginalURL
+func (s *ShortenedURLInfo) GetOwner() string {
+	return s.Owner
 }
 
-func (shortenedURL ShortenedURLInfo) GetID() string {
-	return shortenedURL.ID
+func (s *ShortenedURLInfo) GetOriginalURL() string {
+	return s.OriginalURL
 }
 
-func (shortenedURL *ShortenedURLInfo) SetID(id string) {
-	shortenedURL.ID = id
+func (s *ShortenedURLInfo) GetID() string {
+	return s.ID
 }
 
-func (shortenedURL *ShortenedURLInfo) GetStatus() int {
-	return shortenedURL.Status
+func (s *ShortenedURLInfo) SetID(id string) {
+	s.ID = id
 }
 
-func (shortenedURL *ShortenedURLInfo) SetDeleted() {
-	shortenedURL.Status = Deleted
+func (s *ShortenedURLInfo) GetStatus() int {
+	return s.Status
 }
 
-func (shortenedURL *ShortenedURLInfo) IsDeleted() bool {
-	return shortenedURL.Status == Deleted
+func (s *ShortenedURLInfo) SetDeleted() {
+	s.Status = Deleted
+}
+
+func (s *ShortenedURLInfo) IsDeleted() bool {
+	return s.Status == Deleted
 }
 
 func NewUnstoredShortenedURLInfo(owner, originalURL string) *ShortenedURLInfo {
