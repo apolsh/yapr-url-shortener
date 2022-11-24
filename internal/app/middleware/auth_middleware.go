@@ -3,9 +3,10 @@ package middleware
 import (
 	"context"
 	"encoding/hex"
+	"net/http"
+
 	"github.com/apolsh/yapr-url-shortener/internal/app/crypto"
 	"github.com/google/uuid"
-	"net/http"
 )
 
 const authCookieName = "sessionId"
@@ -21,7 +22,6 @@ func generateNewUserIDCookie(uuid []byte, cryptoProvider crypto.CryptographicPro
 }
 
 func AuthMiddleware(cryptoProvider crypto.CryptographicProvider) func(http.Handler) http.Handler {
-	//TODO: rewrite without else ?
 	return func(next http.Handler) http.Handler {
 		handlerFunction := func(w http.ResponseWriter, r *http.Request) {
 			var userID string

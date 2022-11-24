@@ -1,6 +1,8 @@
 package service
 
 import (
+	"errors"
+
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/dto"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
 )
@@ -17,4 +19,8 @@ type URLShortenerService interface {
 	GetURLsByOwnerID(ownerID string) ([]*entity.ShortenedURLInfo, error)
 
 	PingDB() bool
+
+	DeleteURLsInBatch(owner string, ids []*string) error
 }
+
+var ErrorItemIsDeleted = errors.New("item is marked as deleted")

@@ -1,7 +1,14 @@
 package handler
 
 import (
+	"bytes"
 	"encoding/json"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
 	"github.com/apolsh/yapr-url-shortener/internal/app/mocks"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
@@ -10,11 +17,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"io"
-	"net/http"
-	"net/http/httptest"
-	"strings"
-	"testing"
 )
 
 const dummyURL1 = "https://google.com"
@@ -135,6 +137,30 @@ func (suite *HandlerTestSuite) TestGetURLHandlerWithoutID() {
 	assert.Equal(suite.T(), http.StatusMethodNotAllowed, response.StatusCode)
 }
 
+func (suite *HandlerTestSuite) TestDeleteShortenURLsInBatch() {
+	id1 := "id1"
+	id2 := "id2"
+	idsToDelete := []*string{&id1, &id2}
+
+	suite.urlServiceMock.EXPECT().DeleteURLsInBatch(gomock.Any(), gomock.Any()).Do(func(owner string, ids []*string) {
+		for i, item := range ids {
+			assert.Equal(suite.T(), idsToDelete[i], item)
+		}
+	}).Return(nil)
+
+	response, s := executeDeleteShortenURLsInBatch(suite.T(), suite.server, idsToDelete)
+	defer response.Body.Close()
+	assert.Equal(suite.T(), "", s)
+	assert.Equal(suite.T(), response.StatusCode, http.StatusAccepted)
+}
+
+func (suite *HandlerTestSuite) TestDeleteShortenURLsInBatchInvalidBody() {
+	response, s := executeDeleteShortenURLsInBatch(suite.T(), suite.server, nil)
+	defer response.Body.Close()
+	assert.Equal(suite.T(), response.StatusCode, http.StatusBadRequest)
+	assert.Equal(suite.T(), "failed to decode body\n", s)
+}
+
 func TestExampleTestSuite(t *testing.T) {
 	suite.Run(t, new(HandlerTestSuite))
 }
@@ -201,6 +227,28 @@ func executeSaveURL(t *testing.T, server *httptest.Server, urlToSave string) (*h
 	defer response.Body.Close()
 
 	return response, string(body)
+}
+
+func executeDeleteShortenURLsInBatch(t *testing.T, server *httptest.Server, idsToDelete []*string) (*http.Response, string) {
+	var request *http.Request
+	jsonString, _ := json.Marshal(idsToDelete)
+
+	request, err := http.NewRequest(http.MethodDelete, server.URL+"/api/user/urls", bytes.NewBuffer(jsonString))
+	require.NoError(t, err)
+	request.Header.Add("Content-Type", "application/json; charset=utf-8")
+
+	response, err := http.DefaultClient.Do(request)
+	require.NoError(t, err)
+
+	if response.ContentLength != 0 {
+		body, err := io.ReadAll(response.Body)
+		require.NoError(t, err)
+
+		defer response.Body.Close()
+
+		return response, string(body)
+	}
+	return response, ""
 }
 
 func executeGetUserURLsRequest(t *testing.T, server *httptest.Server) (*http.Response, []GetUserURLsResponse) {

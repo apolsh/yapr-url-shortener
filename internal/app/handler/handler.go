@@ -5,6 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"strings"
+
 	"github.com/apolsh/yapr-url-shortener/internal/app/crypto"
 	"github.com/apolsh/yapr-url-shortener/internal/app/middleware"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository"
@@ -12,10 +17,6 @@ import (
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
 	"github.com/apolsh/yapr-url-shortener/internal/app/service"
 	"github.com/go-chi/chi/v5"
-	"io"
-	"net/http"
-	"net/url"
-	"strings"
 )
 
 type SaveURLBody struct {
@@ -71,8 +72,37 @@ func (h *handler) Register(router *chi.Mux) {
 		r.Get("/api/user/urls", h.GetUserURLsHandler)
 		r.Post("/", h.SaveURLHandler)
 		r.Post("/api/shorten", h.SaveURLJSONHandler)
-
+		r.Delete("/api/user/urls", h.DeleteShortenURLsInBatch)
 	})
+}
+
+func (h *handler) DeleteShortenURLsInBatch(w http.ResponseWriter, r *http.Request) {
+	if !isValidContentType(r, "application/json", "application/x-gzip") {
+		http.Error(w, invalidContentTypeError, http.StatusBadRequest)
+		return
+	}
+
+	reader, err := getBodyReader(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer reader.Close()
+
+	var ids []*string
+
+	if err := json.NewDecoder(reader).Decode(&ids); err != nil || ids == nil || len(ids) == 0 {
+		http.Error(w, decodeRequestBodyError, http.StatusBadRequest)
+		return
+	}
+	ownerID := r.Context().Value(middleware.OwnerID).(string)
+	err = h.service.DeleteURLsInBatch(ownerID, ids)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusAccepted)
 }
 
 func (h *handler) PostShortenURLsInBatch(w http.ResponseWriter, r *http.Request) {
@@ -105,7 +135,7 @@ func (h *handler) PostShortenURLsInBatch(w http.ResponseWriter, r *http.Request)
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(201)
+	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(batch); err != nil {
 		http.Error(w, "Error while generating response", http.StatusInternalServerError)
 	}
@@ -125,6 +155,10 @@ func (h *handler) GetURLHandler(w http.ResponseWriter, r *http.Request) {
 		foundURL, err := h.service.GetURLByID(urlID)
 		if errors.Is(repository.ErrorItemNotFound, err) {
 			http.NotFound(w, r)
+			return
+		}
+		if errors.Is(service.ErrorItemIsDeleted, err) {
+			http.Error(w, "", http.StatusGone)
 			return
 		}
 		http.Redirect(w, r, foundURL, http.StatusTemporaryRedirect)

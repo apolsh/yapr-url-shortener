@@ -65,6 +65,20 @@ func (mr *MockURLShortenerServiceMockRecorder) AddNewURLsInBatch(arg0, arg1 inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddNewURLsInBatch", reflect.TypeOf((*MockURLShortenerService)(nil).AddNewURLsInBatch), arg0, arg1)
 }
 
+// DeleteURLsInBatch mocks base method.
+func (m *MockURLShortenerService) DeleteURLsInBatch(arg0 string, arg1 []*string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteURLsInBatch", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteURLsInBatch indicates an expected call of DeleteURLsInBatch.
+func (mr *MockURLShortenerServiceMockRecorder) DeleteURLsInBatch(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteURLsInBatch", reflect.TypeOf((*MockURLShortenerService)(nil).DeleteURLsInBatch), arg0, arg1)
+}
+
 // GetByOriginalURL mocks base method.
 func (m *MockURLShortenerService) GetByOriginalURL(arg0 string) (*entity.ShortenedURLInfo, error) {
 	m.ctrl.T.Helper()

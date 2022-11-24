@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/dto"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
 	"github.com/rs/xid"
@@ -21,6 +22,8 @@ type URLRepository interface {
 	Close()
 
 	Ping() bool
+
+	DeleteURLsInBatch(owner string, ids []*string) error
 }
 
 var ErrorItemNotFound = errors.New("item not found")
