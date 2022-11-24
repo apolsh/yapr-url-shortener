@@ -194,11 +194,11 @@ func (c *controller) SaveShortenURLJSON(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		if errors.Is(err, repository.ErrorURLAlreadyStored) {
 			info, err := c.shortenService.GetByOriginalURL(body.URL)
-			urlID = info.GetID()
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
+			urlID = info.GetID()
 			statusCode = 409
 		}
 	}

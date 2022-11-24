@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/dto"
@@ -21,16 +20,11 @@ func NewURLShortenerService(repo repository.URLRepository, hostAddress string) *
 }
 
 func (r *URLShortenerServiceImpl) AddNewURL(shortenedURLInfo entity.ShortenedURLInfo) (string, error) {
-	log.Println("service ADD:")
-	log.Println(shortenedURLInfo)
 	return r.repository.Save(shortenedURLInfo)
 }
 
 func (r *URLShortenerServiceImpl) GetURLByID(id string) (string, error) {
 	item, err := r.repository.GetByID(id)
-	log.Println("item:")
-	log.Println(item)
-	log.Println("original URL: " + item.OriginalURL)
 	if item.IsDeleted() {
 		return "", ErrorItemIsDeleted
 	}
