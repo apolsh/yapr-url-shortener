@@ -10,6 +10,7 @@ import (
 	"github.com/apolsh/yapr-url-shortener/internal/app/crypto"
 	httpRouter "github.com/apolsh/yapr-url-shortener/internal/app/handler/http"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository"
+	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
 	"github.com/apolsh/yapr-url-shortener/internal/app/service"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -36,7 +37,7 @@ func main() {
 	if cfg.DatabaseDSN != "" {
 		urlShortenerStorage, err = repository.NewURLRepositoryPG(cfg.DatabaseDSN)
 	} else {
-		urlShortenerStorage, err = repository.NewURLRepositoryInMemory(cfg.FileStoragePath)
+		urlShortenerStorage, err = repository.NewURLRepositoryInMemory(make(map[string]entity.ShortenedURLInfo), cfg.FileStoragePath)
 	}
 	if err != nil {
 		panic(err)
