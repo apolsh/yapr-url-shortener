@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -14,7 +15,17 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
+var (
+	buildVersion = "N/A"
+	BuildDate    = "N/A"
+	BuildCommit  = "N/A"
+)
+
 func main() {
+	fmt.Println("Build version: ", buildVersion)
+	fmt.Println("Build date: ", BuildDate)
+	fmt.Println("Build commit: ", BuildCommit)
+
 	cfg := config.Load()
 
 	router := chi.NewRouter()
