@@ -11,15 +11,12 @@ const (
 	Deleted
 )
 
+// ShortenedURLInfo - представляет собой хранимый объект информации о сохраненном URL
 type ShortenedURLInfo struct {
 	ID          string `json:"id"`
 	Owner       string `json:"owner"`
 	OriginalURL string `json:"originalURL"`
 	Status      int    `json:"status"`
-}
-
-func NewShortenedURLInfo(id, owner, originalURL string) *ShortenedURLInfo {
-	return &ShortenedURLInfo{ID: id, Owner: owner, OriginalURL: originalURL}
 }
 
 func (s *ShortenedURLInfo) ToURLPair(hostURL string) dto.URLPair {

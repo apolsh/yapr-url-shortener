@@ -21,6 +21,9 @@ func generateNewUserIDCookie(uuid []byte, cryptoProvider crypto.CryptographicPro
 	return &http.Cookie{Name: authCookieName, Value: encryptedUserID}
 }
 
+// AuthMiddleware middleware, который присваивает пользователям идентификаторы и
+// идентифицирует пользователя по cookie sessionId, если у пользователя
+// отсутствует этот cookie, то присваивает новый идентификатор и добавляет SetCookie заголовок с sessionId
 func AuthMiddleware(cryptoProvider crypto.CryptographicProvider) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		handlerFunction := func(w http.ResponseWriter, r *http.Request) {

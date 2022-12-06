@@ -40,16 +40,17 @@ func (w *AsyncDBTransactionWorker) executeTask(task *workerTask) {
 func newAsyncDBTransactionWorker(conn *pgxpool.Pool) *AsyncDBTransactionWorker {
 	workerTaskCh := make(chan workerTask, runtime.NumCPU())
 	worker := &AsyncDBTransactionWorker{workerTaskCh: workerTaskCh}
-	for i := 0; i < runtime.NumCPU(); i++ {
-		go func() {
-			for task := range workerTaskCh {
-				ctx := context.Background()
-				tx, err := conn.BeginTx(task.ctx, pgx.TxOptions{})
+	ctx := context.Background()
+	go func() {
+		for task := range workerTaskCh {
+			thisTask := task
+			go func() {
+				tx, err := conn.BeginTx(thisTask.ctx, pgx.TxOptions{})
 				if err != nil {
 					log.Println(err)
 				}
 
-				_, err = tx.Exec(ctx, task.query, task.args...)
+				_, err = tx.Exec(ctx, thisTask.query, thisTask.args...)
 				if err != nil {
 					log.Println(err)
 					_ = tx.Rollback(ctx)
@@ -58,9 +59,10 @@ func newAsyncDBTransactionWorker(conn *pgxpool.Pool) *AsyncDBTransactionWorker {
 				if err := tx.Commit(ctx); err != nil {
 					log.Println(err)
 				}
-			}
-		}()
-	}
+			}()
+		}
+	}()
+
 	return worker
 }
 
@@ -69,6 +71,8 @@ type URLRepositoryPG struct {
 	AsyncWorker *AsyncDBTransactionWorker
 }
 
+// NewURLRepositoryPG хранилище URL в СУБД Postgres, при создании происходит выполнения скрипта создания
+// необходимых таблиц, а так же создается асинхронный воркер, который может выполнять запросы к БД в асинхронном режиме
 func NewURLRepositoryPG(databaseDSN string) (URLRepository, error) {
 	conn, err := pgxpool.Connect(context.Background(), databaseDSN)
 	if err != nil {
@@ -115,11 +119,9 @@ func (repo *URLRepositoryPG) SaveBatch(owner string, batch []dto.ShortenInBatchR
 
 	response := make(map[string]string, len(batch))
 
-	//response := make([]*dto.ShortenInBatchResponseItem, 0, len(batch))
 	var id string
 	for _, requestItem := range batch {
 		id = nextID()
-		//responseItem := &dto.ShortenInBatchResponseItem{CorrelationID: requestItem.CorrelationID, ShortURL: id}
 		_, err := tx.Exec(ctx, preparedSaveBatchStatement, id, requestItem.OriginalURL, owner, 0)
 		if err != nil {
 			return nil, err

@@ -33,18 +33,18 @@ const (
 	applicationJSON = "application/json; charset=utf-8"
 )
 
-type controller struct {
+type Controller struct {
 	shortenService service.URLShortenerService
 }
 
 func NewRouter(r *chi.Mux, serviceImpl service.URLShortenerService, provider crypto.CryptographicProvider) {
-	c := &controller{shortenService: serviceImpl}
+	c := &Controller{shortenService: serviceImpl}
 
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Use(customMiddleware.CompressResponse)
+	r.Use(middleware.Compress(5))
 	r.Use(customMiddleware.AuthMiddleware(provider))
 
 	r.Route("/", func(r chi.Router) {
@@ -65,7 +65,8 @@ func NewRouter(r *chi.Mux, serviceImpl service.URLShortenerService, provider cry
 
 }
 
-func (c *controller) PingDB(w http.ResponseWriter, r *http.Request) {
+// PingDB проверяет работу хранилища URL
+func (c *Controller) PingDB(w http.ResponseWriter, _ *http.Request) {
 	ok := c.shortenService.PingDB()
 	if ok {
 		w.WriteHeader(200)
@@ -74,7 +75,8 @@ func (c *controller) PingDB(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (c *controller) GetShortenURLByID(w http.ResponseWriter, r *http.Request) {
+// GetShortenURLByID производит редирект на сохраненный ранее в хранилище URL
+func (c *Controller) GetShortenURLByID(w http.ResponseWriter, r *http.Request) {
 	if urlID := chi.URLParam(r, "urlID"); urlID != "" {
 		foundURL, err := c.shortenService.GetURLByID(urlID)
 		if errors.Is(repository.ErrorItemNotFound, err) {
@@ -91,7 +93,8 @@ func (c *controller) GetShortenURLByID(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Invalid parameter", http.StatusMethodNotAllowed)
 }
 
-func (c *controller) GetShortenURLsByUser(w http.ResponseWriter, r *http.Request) {
+// GetShortenURLsByUser возвращает список пар (короткий + длинный) URL пользователя
+func (c *Controller) GetShortenURLsByUser(w http.ResponseWriter, r *http.Request) {
 	ownerID := r.Context().Value(customMiddleware.OwnerID).(string)
 	urlPairs, err := c.shortenService.GetURLsByOwnerID(ownerID)
 	if err != nil {
@@ -110,7 +113,8 @@ func (c *controller) GetShortenURLsByUser(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (c *controller) SaveShortenURL(w http.ResponseWriter, r *http.Request) {
+// SaveShortenURL принимает запрос в виде простого текста, сохраняет URL в хранилище
+func (c *Controller) SaveShortenURL(w http.ResponseWriter, r *http.Request) {
 	if !isValidContentType(r, "text/plain", "text", "application/x-gzip") {
 		http.Error(w, invalidContentTypeError, http.StatusBadRequest)
 		return
@@ -150,7 +154,8 @@ func (c *controller) SaveShortenURL(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (c *controller) SaveShortenURLsInBatch(w http.ResponseWriter, r *http.Request) {
+// SaveShortenURLsInBatch сохраняет сразу несколько URL в хранилище за один запрос
+func (c *Controller) SaveShortenURLsInBatch(w http.ResponseWriter, r *http.Request) {
 	var body []dto.ShortenInBatchRequestItem
 
 	err := extractJSONBody(r, &body)
@@ -173,7 +178,8 @@ func (c *controller) SaveShortenURLsInBatch(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-func (c *controller) SaveShortenURLJSON(w http.ResponseWriter, r *http.Request) {
+// SaveShortenURLJSON принимает запрос в виде JSON, сохраняет URL в хранилище
+func (c *Controller) SaveShortenURLJSON(w http.ResponseWriter, r *http.Request) {
 	var body SaveURLBody
 	err := extractJSONBody(r, &body)
 	if err != nil {
@@ -209,7 +215,8 @@ func (c *controller) SaveShortenURLJSON(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-func (c *controller) DeleteShortenURLsInBatch(w http.ResponseWriter, r *http.Request) {
+// DeleteShortenURLsInBatch помечает URL в хранилище как удаленный
+func (c *Controller) DeleteShortenURLsInBatch(w http.ResponseWriter, r *http.Request) {
 	var ids []string
 	err := extractJSONBody(r, &ids)
 	if err != nil {

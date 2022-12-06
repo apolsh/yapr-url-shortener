@@ -38,7 +38,7 @@ func (f fileBackup) write(url entity.ShortenedURLInfo) error {
 	return f.encoder.Encode(&url)
 }
 
-func NewFileBackup(filename string) (*fileBackup, error) {
+func newFileBackup(filename string) (*fileBackup, error) {
 	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		return nil, err
@@ -57,10 +57,14 @@ type URLRepositoryInMemory struct {
 	mu            sync.RWMutex
 }
 
+// NewURLRepositoryInMemory создает хранилище URL в памяти, если передан аргумент fileStorage,
+// то при создании будут считаны записи ранее сохраненные в этот файл. а так же при работе в этот
+// файл будут сохранены новые записи. Если аргумент fileStorage не передан, то все данные будут храниться
+// только в памяти, сохранения на диск не происходит.
 func NewURLRepositoryInMemory(fileStorage string) (URLRepository, error) {
 	storage := make(map[string]entity.ShortenedURLInfo)
 	if fileStorage != "" {
-		backupStorage, err := NewFileBackup(fileStorage)
+		backupStorage, err := newFileBackup(fileStorage)
 		if err != nil {
 			return nil, fmt.Errorf(`repository initialization error: %w`, err)
 		}
