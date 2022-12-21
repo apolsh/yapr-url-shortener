@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	_ "embed"
 	"fmt"
 	"log"
 	"net/http"
@@ -25,6 +27,12 @@ var (
 	buildDate    = "N/A"
 	buildCommit  = "N/A"
 )
+
+//go:embed tls/cert.pem
+var tlsCert []byte
+
+//go:embed tls/key.pem
+var tlsKey []byte
 
 // buildVersion - версия сборки
 // buildDate - дата сборки
@@ -86,8 +94,23 @@ func main() {
 	}()
 
 	logger.Println("Server is ready to handle requests at", cfg.ServerAddress)
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		logger.Fatalf("Could not listen on %s: %v\n", cfg.ServerAddress, err)
+
+	if cfg.HTTPSEnabled {
+		cer, err := tls.X509KeyPair(tlsCert, tlsKey)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		server.TLSConfig = &tls.Config{Certificates: []tls.Certificate{cer}}
+
+		if err := server.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
+			logger.Fatalf("Could not listen on %s: %v\n", cfg.ServerAddress, err)
+		}
+	} else {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logger.Fatalf("Could not listen on %s: %v\n", cfg.ServerAddress, err)
+		}
 	}
 
 	<-done
