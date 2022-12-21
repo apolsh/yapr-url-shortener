@@ -39,7 +39,7 @@ func (c *Config) populateEmptyFields(another Config) {
 	if c.ConfigFilePath == "" && another.ConfigFilePath != "" {
 		c.ConfigFilePath = another.ConfigFilePath
 	}
-	if c.HTTPSEnabled == false && another.HTTPSEnabled != false {
+	if !c.HTTPSEnabled && another.HTTPSEnabled {
 		c.HTTPSEnabled = another.HTTPSEnabled
 	}
 }
