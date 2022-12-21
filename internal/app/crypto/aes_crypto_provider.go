@@ -17,7 +17,7 @@ type AESCryptoProvider struct {
 }
 
 // NewAESCryptoProvider в качестве аргумента принимает строку, которая будет использован как AES ключ
-func NewAESCryptoProvider(keyString string) CryptographicProvider {
+func NewAESCryptoProvider(keyString string) AESCryptoProvider {
 	keyHash := sha256.Sum256([]byte(keyString))
 
 	aesBlock, err := aes.NewCipher(keyHash[:])

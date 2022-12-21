@@ -61,8 +61,8 @@ type URLRepositoryInMemory struct {
 // то при создании будут считаны записи ранее сохраненные в этот файл. а так же при работе в этот
 // файл будут сохранены новые записи. Если аргумент fileStorage не передан, то все данные будут храниться
 // только в памяти, сохранения на диск не происходит.
-func NewURLRepositoryInMemory(fileStorage string) (URLRepository, error) {
-	storage := make(map[string]entity.ShortenedURLInfo)
+func NewURLRepositoryInMemory(m map[string]entity.ShortenedURLInfo, fileStorage string) (*URLRepositoryInMemory, error) {
+	storage := m
 	if fileStorage != "" {
 		backupStorage, err := newFileBackup(fileStorage)
 		if err != nil {
@@ -98,6 +98,9 @@ func (r *URLRepositoryInMemory) Save(shortenedInfo entity.ShortenedURLInfo) (str
 		}
 		r.Storage[id] = shortenedInfo
 		return id, nil
+	}
+	if err == nil {
+		return "", ErrorURLAlreadyStored
 	}
 	return "", err
 }

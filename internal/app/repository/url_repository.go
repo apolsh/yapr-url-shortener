@@ -1,3 +1,5 @@
+//go:generate mockgen -destination=../mocks/url_repository_mock.go -package=mocks github.com/apolsh/yapr-url-shortener/internal/app/repository URLRepository
+
 package repository
 
 import (
