@@ -11,7 +11,7 @@ import (
 
 // Config конфигурационные данные приложения
 type Config struct {
-	ServerAddress   string `env:"SERVER_ADDRESS" envDefault:"localhost:443" json:"server_address"`
+	ServerAddress   string `env:"SERVER_ADDRESS" envDefault:"localhost:8080" json:"server_address"`
 	BaseURL         string `env:"BASE_URL" envDefault:"http://localhost:8080" json:"base_url"`
 	FileStoragePath string `env:"FILE_STORAGE_PATH" json:"file_storage_path"`
 	AuthSecretKey   string `env:"AUTH_SECRET_KEY" envDefault:"very_secret_key"`
