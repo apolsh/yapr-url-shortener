@@ -1,4 +1,4 @@
-package repository
+package postgres
 
 import (
 	"context"
@@ -8,16 +8,20 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/apolsh/yapr-url-shortener/internal/app/repository"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/dto"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
+	postgres "github.com/apolsh/yapr-url-shortener/internal/app/repository/postgres/migrations"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
-const preparedSaveBatchStatement = "SAVE_BATCH_STATEMENT"
-const preparedMarkAsDeletedStatement = "MARK_AS_DELETED_STATEMENT"
-const constraintOriginalURL = "shortened_urls_original_url_uindex"
+const (
+	preparedSaveBatchStatement     = "SAVE_BATCH_STATEMENT"
+	preparedMarkAsDeletedStatement = "MARK_AS_DELETED_STATEMENT"
+	constraintOriginalURL          = "shortened_urls_original_url_uindex"
+)
 
 type workerTask struct {
 	ctx   context.Context
@@ -73,12 +77,13 @@ type URLRepositoryPG struct {
 
 // NewURLRepositoryPG хранилище URL в СУБД Postgres, при создании происходит выполнения скрипта создания
 // необходимых таблиц, а так же создается асинхронный воркер, который может выполнять запросы к БД в асинхронном режиме
-func NewURLRepositoryPG(databaseDSN string) (URLRepository, error) {
+func NewURLRepositoryPG(databaseDSN string) (repository.URLRepository, error) {
 	conn, err := pgxpool.Connect(context.Background(), databaseDSN)
 	if err != nil {
 		return nil, fmt.Errorf(`repository initialization error: %w`, err)
 	}
-	err = setupTable(conn)
+	postgres.RunMigration(databaseDSN)
+	err = setupPreparedStatements(conn)
 	if err != nil {
 		return nil, fmt.Errorf(`repository initialization error: %w`, err)
 	}
@@ -89,7 +94,7 @@ func NewURLRepositoryPG(databaseDSN string) (URLRepository, error) {
 }
 
 func (repo URLRepositoryPG) Save(shortenedInfo entity.ShortenedURLInfo) (string, error) {
-	shortenedInfo.ID = nextID()
+	shortenedInfo.ID = repository.NextID()
 
 	q := "INSERT INTO shortened_urls (id, original_url, owner, status) VALUES ($1, $2, $3, $4)"
 
@@ -99,7 +104,7 @@ func (repo URLRepositoryPG) Save(shortenedInfo entity.ShortenedURLInfo) (string,
 	if err != nil {
 		if errors.As(err, &pgErr) {
 			if pgErr.ConstraintName == constraintOriginalURL {
-				return "", ErrorURLAlreadyStored
+				return "", repository.ErrorURLAlreadyStored
 			}
 		}
 		return "", err
@@ -121,7 +126,7 @@ func (repo *URLRepositoryPG) SaveBatch(owner string, batch []dto.ShortenInBatchR
 
 	var id string
 	for _, requestItem := range batch {
-		id = nextID()
+		id = repository.NextID()
 		_, err := tx.Exec(ctx, preparedSaveBatchStatement, id, requestItem.OriginalURL, owner, 0)
 		if err != nil {
 			return nil, err
@@ -203,7 +208,7 @@ func (repo *URLRepositoryPG) Close() {
 	repo.DB.Close()
 }
 
-func setupTable(conn *pgxpool.Pool) error {
+func setupPreparedStatements(conn *pgxpool.Pool) error {
 	ctx := context.Background()
 	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
@@ -213,27 +218,6 @@ func setupTable(conn *pgxpool.Pool) error {
 		_ = tx.Rollback(ctx)
 	}()
 
-	createTableQ := `create table if not exists shortened_urls
-	(
-		id           varchar(20)        not null,
-		original_url varchar            not null,
-		owner        uuid               not null,
-		status       smallint default 0 not null
-	)`
-	createIDIndexQ := "create unique index if not exists shortened_urls_id_uindex on shortened_urls (id)"
-	createOriginalURLIndexQ := "create unique index if not exists shortened_urls_original_url_uindex on shortened_urls (original_url)"
-	_, err = tx.Exec(ctx, createTableQ)
-	if err != nil {
-		return err
-	}
-	_, err = tx.Exec(ctx, createIDIndexQ)
-	if err != nil {
-		return err
-	}
-	_, err = tx.Exec(ctx, createOriginalURLIndexQ)
-	if err != nil {
-		return err
-	}
 	_, err = tx.Prepare(ctx, preparedSaveBatchStatement, "INSERT INTO shortened_urls (id, original_url, owner, status) VALUES ($1, $2, $3, $4)")
 	if err != nil {
 		return err

@@ -40,6 +40,6 @@ var ErrorItemNotFound = errors.New("item not found")
 
 var ErrorURLAlreadyStored = errors.New("provided URL is already stored")
 
-func nextID() string {
+func NextID() string {
 	return xid.New().String()
 }

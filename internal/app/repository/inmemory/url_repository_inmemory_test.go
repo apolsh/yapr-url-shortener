@@ -1,8 +1,9 @@
-package repository
+package inmemory
 
 import (
 	"testing"
 
+	"github.com/apolsh/yapr-url-shortener/internal/app/repository"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/dto"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
 	"github.com/stretchr/testify/assert"
@@ -38,7 +39,7 @@ func (s *URLRepositoryInMemorySuite) SetupTest() {
 func (s *URLRepositoryInMemorySuite) TestSaveAlreadyStored() {
 	_, _ = s.rep.Save(*entity.NewUnstoredShortenedURLInfo(ownerID, dummyURL1))
 	_, err := s.rep.Save(*entity.NewUnstoredShortenedURLInfo(ownerID, dummyURL1))
-	assert.ErrorIs(s.T(), ErrorURLAlreadyStored, err)
+	assert.ErrorIs(s.T(), repository.ErrorURLAlreadyStored, err)
 }
 
 func (s *URLRepositoryInMemorySuite) TestSaveNewURL() {
@@ -70,7 +71,7 @@ func (s *URLRepositoryInMemorySuite) TestGetByID() {
 
 func (s *URLRepositoryInMemorySuite) TestGetByIDNotFound() {
 	_, err := s.rep.GetByID(dummyID1)
-	assert.ErrorIs(s.T(), ErrorItemNotFound, err)
+	assert.ErrorIs(s.T(), repository.ErrorItemNotFound, err)
 }
 
 func (s *URLRepositoryInMemorySuite) TestGetByOriginalURL() {
@@ -86,7 +87,7 @@ func (s *URLRepositoryInMemorySuite) TestGetByOriginalURL() {
 
 func (s *URLRepositoryInMemorySuite) TestGetByOriginalURLItemNotFound() {
 	_, err := s.rep.GetByOriginalURL(dummyURL1)
-	assert.ErrorIs(s.T(), ErrorItemNotFound, err)
+	assert.ErrorIs(s.T(), repository.ErrorItemNotFound, err)
 }
 
 func (s *URLRepositoryInMemorySuite) TestGetAllByOwner() {

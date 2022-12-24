@@ -1,4 +1,4 @@
-package repository
+package inmemory
 
 import (
 	"encoding/gob"
@@ -10,6 +10,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/apolsh/yapr-url-shortener/internal/app/repository"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/dto"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
 )
@@ -85,8 +86,8 @@ func NewURLRepositoryInMemory(m map[string]entity.ShortenedURLInfo, fileStorage 
 
 func (r *URLRepositoryInMemory) Save(shortenedInfo entity.ShortenedURLInfo) (string, error) {
 	_, err := r.GetByOriginalURL(shortenedInfo.GetOriginalURL())
-	if err != nil && errors.Is(err, ErrorItemNotFound) {
-		id := nextID()
+	if err != nil && errors.Is(err, repository.ErrorItemNotFound) {
+		id := repository.NextID()
 		shortenedInfo.SetID(id)
 		r.mu.Lock()
 		defer r.mu.Unlock()
@@ -100,7 +101,7 @@ func (r *URLRepositoryInMemory) Save(shortenedInfo entity.ShortenedURLInfo) (str
 		return id, nil
 	}
 	if err == nil {
-		return "", ErrorURLAlreadyStored
+		return "", repository.ErrorURLAlreadyStored
 	}
 	return "", err
 }
@@ -149,7 +150,7 @@ func (r *URLRepositoryInMemory) GetByID(id string) (entity.ShortenedURLInfo, err
 	defer r.mu.RUnlock()
 	s, isFound := r.Storage[id]
 	if !isFound {
-		return entity.ShortenedURLInfo{}, ErrorItemNotFound
+		return entity.ShortenedURLInfo{}, repository.ErrorItemNotFound
 	}
 	return s, nil
 }
@@ -162,7 +163,7 @@ func (r *URLRepositoryInMemory) GetByOriginalURL(url string) (entity.ShortenedUR
 			return value, nil
 		}
 	}
-	return entity.ShortenedURLInfo{}, ErrorItemNotFound
+	return entity.ShortenedURLInfo{}, repository.ErrorItemNotFound
 }
 
 func (r *URLRepositoryInMemory) GetAllByOwner(owner string) ([]entity.ShortenedURLInfo, error) {

@@ -18,6 +18,7 @@ type Config struct {
 	DatabaseDSN     string `env:"DATABASE_DSN" json:"database_dsn"`
 	HTTPSEnabled    bool   `env:"ENABLE_HTTPS" json:"enable_https"`
 	ConfigFilePath  string `env:"CONFIG"`
+	LogLevel        string `env:"LOG_LEVEL" envDefault:"info"`
 }
 
 func (c *Config) populateEmptyFields(another Config) {

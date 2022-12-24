@@ -17,7 +17,10 @@ import (
 	httpRouter "github.com/apolsh/yapr-url-shortener/internal/app/handler/http"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
+	"github.com/apolsh/yapr-url-shortener/internal/app/repository/inmemory"
+	"github.com/apolsh/yapr-url-shortener/internal/app/repository/postgres"
 	"github.com/apolsh/yapr-url-shortener/internal/app/service"
+	"github.com/apolsh/yapr-url-shortener/internal/logger"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
@@ -43,6 +46,7 @@ func main() {
 	fmt.Println("Build commit: ", buildCommit)
 
 	cfg := config.Load()
+	logger.SetGlobalLevel(cfg.LogLevel)
 
 	router := chi.NewRouter()
 
@@ -50,9 +54,9 @@ func main() {
 	var urlShortenerStorage repository.URLRepository
 	var err error
 	if cfg.DatabaseDSN != "" {
-		urlShortenerStorage, err = repository.NewURLRepositoryPG(cfg.DatabaseDSN)
+		urlShortenerStorage, err = postgres.NewURLRepositoryPG(cfg.DatabaseDSN)
 	} else {
-		urlShortenerStorage, err = repository.NewURLRepositoryInMemory(make(map[string]entity.ShortenedURLInfo), cfg.FileStoragePath)
+		urlShortenerStorage, err = inmemory.NewURLRepositoryInMemory(make(map[string]entity.ShortenedURLInfo), cfg.FileStoragePath)
 	}
 	if err != nil {
 		panic(err)
