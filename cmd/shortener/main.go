@@ -39,7 +39,7 @@ var tlsKey []byte
 
 // buildVersion - версия сборки
 // buildDate - дата сборки
-// buildCommit - комментарий сборки
+// buildCommit - комментарий сборки.
 func main() {
 	fmt.Println("Build version: ", buildVersion)
 	fmt.Println("Build date: ", buildDate)
