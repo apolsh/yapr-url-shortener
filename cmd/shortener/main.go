@@ -26,7 +26,7 @@ var (
 	buildCommit  = "N/A"
 )
 
-// buildVersion - версия сборки
+// buildVersion - версия сборки.
 // buildDate - дата сборки
 // buildCommit - комментарий сборки
 func main() {
