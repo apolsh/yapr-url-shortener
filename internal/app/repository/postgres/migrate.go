@@ -4,6 +4,7 @@ import (
 	"embed"
 	"errors"
 	"os"
+	"strings"
 	"time"
 
 	logKey "github.com/apolsh/yapr-url-shortener/internal/logger"
@@ -23,7 +24,9 @@ var fs embed.FS
 
 func RunMigration(databaseURL string) {
 
-	databaseURL += "?sslmode=disable"
+	if !strings.Contains(databaseURL, "sslmode") {
+		databaseURL += "?sslmode=disable"
+	}
 
 	logger := log.With().
 		Str(logKey.ComponentKey, "migrations").
