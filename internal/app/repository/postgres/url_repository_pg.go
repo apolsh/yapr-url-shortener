@@ -11,7 +11,6 @@ import (
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/dto"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
-	postgres "github.com/apolsh/yapr-url-shortener/internal/app/repository/postgres/migrations"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -82,7 +81,7 @@ func NewURLRepositoryPG(databaseDSN string) (repository.URLRepository, error) {
 	if err != nil {
 		return nil, fmt.Errorf(`repository initialization error: %w`, err)
 	}
-	postgres.RunMigration(databaseDSN)
+	RunMigration(databaseDSN)
 	err = setupPreparedStatements(conn)
 	if err != nil {
 		return nil, fmt.Errorf(`repository initialization error: %w`, err)
