@@ -32,15 +32,15 @@ type Logger struct {
 }
 
 func (l *Logger) Debug(message string, args ...interface{}) {
-	l.logger.Debug().Msgf(message, args)
+	l.logger.Debug().Msgf(message, args...)
 }
 
 func (l *Logger) Info(message string, args ...interface{}) {
-	l.logger.Info().Msgf(message, args)
+	l.logger.Info().Msgf(message, args...)
 }
 
 func (l *Logger) Warn(message string, args ...interface{}) {
-	l.logger.Warn().Msgf(message, args)
+	l.logger.Warn().Msgf(message, args...)
 }
 
 func (l *Logger) Error(err error) {

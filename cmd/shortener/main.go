@@ -90,7 +90,7 @@ func main() {
 
 		server.SetKeepAlivesEnabled(false)
 		if err := server.Shutdown(ctx); err != nil {
-			log.Fatal(fmt.Errorf("Could not gracefully shutdown the server: %v\n", err))
+			log.Fatal(fmt.Errorf("could not gracefully shutdown the server: %v", err))
 		}
 		urlShortenerStorage.Close()
 		close(done)
@@ -108,11 +108,11 @@ func main() {
 		server.TLSConfig = &tls.Config{Certificates: []tls.Certificate{cer}}
 
 		if err := server.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
-			log.Fatal(fmt.Errorf("Could not listen on %s: %v\n", cfg.ServerAddress, err))
+			log.Fatal(fmt.Errorf("could not listen on %s: %v", cfg.ServerAddress, err))
 		}
 	} else {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatal(fmt.Errorf("Could not listen on %s: %v\n", cfg.ServerAddress, err))
+			log.Fatal(fmt.Errorf("could not listen on %s: %v", cfg.ServerAddress, err))
 		}
 	}
 

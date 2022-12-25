@@ -29,13 +29,12 @@ var (
 )
 
 type workerTask struct {
-	ctx   context.Context
 	query string
 	args  []interface{}
 }
 
-func NewWorkerTask(ctx context.Context, query string, args ...interface{}) *workerTask {
-	return &workerTask{ctx: ctx, query: query, args: args}
+func NewWorkerTask(query string, args ...interface{}) *workerTask {
+	return &workerTask{query: query, args: args}
 }
 
 type AsyncDBTransactionWorker struct {
@@ -60,7 +59,7 @@ func newAsyncDBTransactionWorker(conn *pgxpool.Pool) *AsyncDBTransactionWorker {
 		for task := range workerTaskCh {
 			thisTask := task
 			go func() {
-				tx, err := conn.BeginTx(thisTask.ctx, pgx.TxOptions{})
+				tx, err := conn.BeginTx(context.Background(), pgx.TxOptions{})
 				if err != nil {
 					workerLogger.Error(err)
 				}
@@ -215,9 +214,9 @@ func (repo *URLRepositoryPG) Ping(ctx context.Context) bool {
 	}
 }
 
-func (repo *URLRepositoryPG) DeleteURLsInBatch(ctx context.Context, owner string, ids []string) error {
+func (repo *URLRepositoryPG) DeleteURLsInBatch(_ context.Context, owner string, ids []string) error {
 	q := "UPDATE shortened_urls SET status = 1 WHERE owner = $1 AND id = ANY ($2)"
-	task := NewWorkerTask(ctx, q, owner, ids)
+	task := NewWorkerTask(q, owner, ids)
 	repo.AsyncWorker.executeTask(task)
 
 	return nil
