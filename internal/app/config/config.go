@@ -3,11 +3,14 @@ package config
 import (
 	"encoding/json"
 	"flag"
-	"log"
+	"fmt"
 	"os"
 
+	"github.com/apolsh/yapr-url-shortener/internal/logger"
 	"github.com/caarlos0/env"
 )
+
+var log = logger.LoggerOfComponent("config")
 
 // Config конфигурационные данные приложения
 type Config struct {
@@ -72,13 +75,13 @@ func Load() Config {
 	if envsConfig.ConfigFilePath != "" {
 		f, err := os.Open(envsConfig.ConfigFilePath)
 		if err != nil {
-			log.Printf("failed to read file: %s, cause: %s", envsConfig.ConfigFilePath, err.Error())
+			log.Fatal(fmt.Errorf("failed to read file: %s, cause: %w", envsConfig.ConfigFilePath, err))
 		}
 
 		var configFile Config
 		err = json.NewDecoder(f).Decode(&configFile)
 		if err != nil {
-			log.Printf("failed to parse file: %s, cause: %s", envsConfig.ConfigFilePath, err.Error())
+			log.Fatal(fmt.Errorf("failed to parse file: %s, cause: %w", envsConfig.ConfigFilePath, err))
 		}
 		mainConfig.populateEmptyFields(configFile)
 	}

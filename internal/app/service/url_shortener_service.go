@@ -35,30 +35,4 @@ type URLShortenerService interface {
 	GetShortenURLFromID(ctx context.Context, id string) string
 }
 
-/*
-	// Save сохраняет URL в хранилище
-	Save(shortenedInfo entity.ShortenedURLInfo) (string, error)
-
-	// SaveBatch сохраняет массив URL в хранилище
-	SaveBatch(owner string, batch []dto.ShortenInBatchRequestItem) (map[string]string, error)
-
-	// GetByID возвращает ShortenedURLInfo найденный по идентификатору
-	GetByID(id string) (entity.ShortenedURLInfo, error)
-
-	// GetByOriginalURL возвращает ShortenedURLInfo найденный по оригинальному URL
-	GetByOriginalURL(url string) (entity.ShortenedURLInfo, error)
-
-	// GetAllByOwner  возвращает массив ShortenedURLInfo найденный по владельцу URL
-	GetAllByOwner(owner string) ([]entity.ShortenedURLInfo, error)
-
-	// Close инициирует завершение процессов в хранилища
-	Close()
-
-	// Ping проверяет работоспособность хранилища
-	Ping() bool
-
-	// DeleteURLsInBatch помечает как удаленные URL, переданные в списке и принадлежащие указанному пользователю
-	DeleteURLsInBatch(owner string, ids []string) error
-*/
-
 var ErrorItemIsDeleted = errors.New("item is marked as deleted")

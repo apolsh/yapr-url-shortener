@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -15,6 +14,7 @@ import (
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/dto"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
 	"github.com/apolsh/yapr-url-shortener/internal/app/service"
+	"github.com/apolsh/yapr-url-shortener/internal/logger"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
@@ -28,6 +28,8 @@ const (
 	bodyReadingError        = "Error while body reading"
 	parseURLError           = "Passed value is not valid URL"
 )
+
+var log = logger.LoggerOfComponent("http-router")
 
 const (
 	applicationJSON = "application/json; charset=utf-8"
@@ -79,13 +81,16 @@ func (c *Controller) PingDB(w http.ResponseWriter, r *http.Request) {
 func (c *Controller) GetShortenURLByID(w http.ResponseWriter, r *http.Request) {
 	if urlID := chi.URLParam(r, "urlID"); urlID != "" {
 		foundURL, err := c.shortenService.GetURLByID(r.Context(), urlID)
-		if errors.Is(repository.ErrorItemNotFound, err) {
-			http.NotFound(w, r)
-			return
-		}
-		if errors.Is(service.ErrorItemIsDeleted, err) {
-			http.Error(w, "", http.StatusGone)
-			return
+		if err != nil {
+			log.Error(err)
+			if errors.Is(repository.ErrorItemNotFound, err) {
+				http.NotFound(w, r)
+				return
+			}
+			if errors.Is(service.ErrorItemIsDeleted, err) {
+				http.Error(w, "", http.StatusGone)
+				return
+			}
 		}
 		http.Redirect(w, r, foundURL, http.StatusTemporaryRedirect)
 		return
@@ -98,6 +103,7 @@ func (c *Controller) GetShortenURLsByUser(w http.ResponseWriter, r *http.Request
 	ownerID := r.Context().Value(customMiddleware.OwnerID).(string)
 	urlPairs, err := c.shortenService.GetURLsByOwnerID(r.Context(), ownerID)
 	if err != nil {
+		log.Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
@@ -109,6 +115,7 @@ func (c *Controller) GetShortenURLsByUser(w http.ResponseWriter, r *http.Request
 	setContentType(w, applicationJSON)
 	w.WriteHeader(200)
 	if err := json.NewEncoder(w).Encode(urlPairs); err != nil {
+		log.Error(err)
 		http.Error(w, encodeResponseBodyError, http.StatusInternalServerError)
 	}
 }
@@ -122,11 +129,13 @@ func (c *Controller) SaveShortenURL(w http.ResponseWriter, r *http.Request) {
 
 	urlString, err := extractTextBody(r)
 	if err != nil {
+		log.Error(err)
 		http.Error(w, bodyReadingError, http.StatusInternalServerError)
 		return
 	}
 	_, err = url.ParseRequestURI(urlString)
 	if err != nil {
+		log.Error(err)
 		http.Error(w, parseURLError, http.StatusBadRequest)
 		return
 	}
@@ -136,6 +145,7 @@ func (c *Controller) SaveShortenURL(w http.ResponseWriter, r *http.Request) {
 	ownerID := r.Context().Value(customMiddleware.OwnerID).(string)
 	urlID, err = c.shortenService.AddNewURL(r.Context(), *entity.NewUnstoredShortenedURLInfo(ownerID, urlString))
 	if err != nil {
+		log.Error(err)
 		if errors.Is(err, repository.ErrorURLAlreadyStored) {
 			info, err := c.shortenService.GetByOriginalURL(r.Context(), urlString)
 			urlID = info.GetID()
@@ -150,6 +160,7 @@ func (c *Controller) SaveShortenURL(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(statusCode)
 	_, err = w.Write([]byte(c.shortenService.GetShortenURLFromID(r.Context(), urlID)))
 	if err != nil {
+		log.Error(err)
 		http.Error(w, encodeResponseBodyError, http.StatusInternalServerError)
 	}
 }
@@ -160,6 +171,7 @@ func (c *Controller) SaveShortenURLsInBatch(w http.ResponseWriter, r *http.Reque
 
 	err := extractJSONBody(r, &body)
 	if err != nil {
+		log.Error(err)
 		http.Error(w, decodeRequestBodyError, http.StatusBadRequest)
 		return
 	}
@@ -167,6 +179,7 @@ func (c *Controller) SaveShortenURLsInBatch(w http.ResponseWriter, r *http.Reque
 	ownerID := r.Context().Value(customMiddleware.OwnerID).(string)
 	batch, err := c.shortenService.AddNewURLsInBatch(r.Context(), ownerID, body)
 	if err != nil {
+		log.Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -174,6 +187,7 @@ func (c *Controller) SaveShortenURLsInBatch(w http.ResponseWriter, r *http.Reque
 	setContentType(w, applicationJSON)
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(batch); err != nil {
+		log.Error(err)
 		http.Error(w, "Error while generating response", http.StatusInternalServerError)
 	}
 }
@@ -183,12 +197,14 @@ func (c *Controller) SaveShortenURLJSON(w http.ResponseWriter, r *http.Request) 
 	var body SaveURLBody
 	err := extractJSONBody(r, &body)
 	if err != nil {
+		log.Error(err)
 		http.Error(w, decodeRequestBodyError, http.StatusBadRequest)
 		return
 	}
 
 	_, err = url.ParseRequestURI(body.URL)
 	if err != nil {
+		log.Error(err)
 		http.Error(w, parseURLError, http.StatusBadRequest)
 		return
 	}
@@ -201,6 +217,7 @@ func (c *Controller) SaveShortenURLJSON(w http.ResponseWriter, r *http.Request) 
 		if errors.Is(err, repository.ErrorURLAlreadyStored) {
 			info, err := c.shortenService.GetByOriginalURL(r.Context(), body.URL)
 			if err != nil {
+				log.Error(err)
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -220,6 +237,7 @@ func (c *Controller) DeleteShortenURLsInBatch(w http.ResponseWriter, r *http.Req
 	var ids []string
 	err := extractJSONBody(r, &ids)
 	if err != nil {
+		log.Error(err)
 		http.Error(w, decodeRequestBodyError, http.StatusBadRequest)
 		return
 	}
@@ -228,6 +246,7 @@ func (c *Controller) DeleteShortenURLsInBatch(w http.ResponseWriter, r *http.Req
 	err = c.shortenService.DeleteURLsInBatch(r.Context(), ownerID, ids)
 
 	if err != nil {
+		log.Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -262,11 +281,11 @@ func extractJSONBody(r *http.Request, v interface{}) error {
 	defer func(reader io.ReadCloser) {
 		err := reader.Close()
 		if err != nil {
-			log.Println(err.Error())
-			//log.Err(err).Msg(err.Error())
+			log.Error(err)
 		}
 	}(reader)
 	if err := json.NewDecoder(reader).Decode(v); err != nil {
+		log.Error(err)
 		return err
 	}
 	return nil
@@ -277,6 +296,7 @@ func extractTextBody(r *http.Request) (string, error) {
 	if r.Header.Get(`Content-Encoding`) == `gzip` {
 		gz, err := gzip.NewReader(r.Body)
 		if err != nil {
+			log.Error(err)
 			return "", err
 		}
 		reader = gz
@@ -286,12 +306,12 @@ func extractTextBody(r *http.Request) (string, error) {
 	defer func(reader io.ReadCloser) {
 		err := reader.Close()
 		if err != nil {
-			log.Println(err.Error())
-			//log.Err(err).Msg(err.Error())
+			log.Error(err)
 		}
 	}(reader)
 	body, err := io.ReadAll(reader)
 	if err != nil {
+		log.Error(err)
 		return "", err
 	}
 	return string(body), nil

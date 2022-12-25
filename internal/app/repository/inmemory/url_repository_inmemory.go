@@ -7,14 +7,16 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"sync"
 
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/dto"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
+	"github.com/apolsh/yapr-url-shortener/internal/logger"
 )
+
+var log = logger.LoggerOfComponent("in-memory-repo")
 
 type backupStorage interface {
 	read() (entity.ShortenedURLInfo, error)
@@ -31,6 +33,7 @@ func (f fileBackup) read() (entity.ShortenedURLInfo, error) {
 
 	event := entity.ShortenedURLInfo{}
 	if err := f.decoder.Decode(&event); err != nil {
+		log.Error(err)
 		return entity.ShortenedURLInfo{}, err
 	}
 	return event, nil
@@ -43,6 +46,7 @@ func (f fileBackup) write(url entity.ShortenedURLInfo) error {
 func newFileBackup(filename string) (*fileBackup, error) {
 	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
+		log.Error(err)
 		return nil, err
 	}
 	gob.Register(entity.ShortenedURLInfo{})
@@ -68,6 +72,7 @@ func NewURLRepositoryInMemory(m map[string]entity.ShortenedURLInfo, fileStorage 
 	if fileStorage != "" {
 		backupStorage, err := newFileBackup(fileStorage)
 		if err != nil {
+			log.Error(err)
 			return nil, fmt.Errorf(`repository initialization error: %w`, err)
 		}
 		for {
@@ -76,6 +81,7 @@ func NewURLRepositoryInMemory(m map[string]entity.ShortenedURLInfo, fileStorage 
 				break
 			}
 			if err != nil {
+				log.Error(err)
 				return nil, fmt.Errorf(`repository initialization error: %w`, err)
 			}
 			storage[url.ID] = url
@@ -93,6 +99,7 @@ func (r *URLRepositoryInMemory) Save(ctx context.Context, shortenedInfo entity.S
 		r.mu.Lock()
 		defer r.mu.Unlock()
 		if r.backupStorage != nil {
+			log.Error(err)
 			err := r.backupStorage.write(shortenedInfo)
 			if err != nil {
 				return "", err
@@ -102,6 +109,7 @@ func (r *URLRepositoryInMemory) Save(ctx context.Context, shortenedInfo entity.S
 		return id, nil
 	}
 	if err == nil {
+		log.Error(err)
 		return "", repository.ErrorURLAlreadyStored
 	}
 	return "", err
@@ -113,6 +121,7 @@ func (r *URLRepositoryInMemory) update(_ context.Context, shortenedInfo entity.S
 	if r.backupStorage != nil {
 		err := r.backupStorage.write(shortenedInfo)
 		if err != nil {
+			log.Error(err)
 			return "", err
 		}
 	}
@@ -138,7 +147,7 @@ func (r *URLRepositoryInMemory) DeleteURLsInBatch(ctx context.Context, owner str
 			urlEntity.SetDeleted()
 			_, err := r.update(ctx, urlEntity)
 			if err != nil {
-				log.Println("failed to save ", urlEntity.GetID(), err.Error())
+				log.Error(fmt.Errorf("failed to save %s, cause: %w", urlEntity.GetID(), err))
 			}
 		}
 	}
