@@ -1,6 +1,7 @@
 package inmemory
 
 import (
+	"context"
 	"testing"
 
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository"
@@ -37,13 +38,13 @@ func (s *URLRepositoryInMemorySuite) SetupTest() {
 }
 
 func (s *URLRepositoryInMemorySuite) TestSaveAlreadyStored() {
-	_, _ = s.rep.Save(*entity.NewUnstoredShortenedURLInfo(ownerID, dummyURL1))
-	_, err := s.rep.Save(*entity.NewUnstoredShortenedURLInfo(ownerID, dummyURL1))
+	_, _ = s.rep.Save(context.Background(), *entity.NewUnstoredShortenedURLInfo(ownerID, dummyURL1))
+	_, err := s.rep.Save(context.Background(), *entity.NewUnstoredShortenedURLInfo(ownerID, dummyURL1))
 	assert.ErrorIs(s.T(), repository.ErrorURLAlreadyStored, err)
 }
 
 func (s *URLRepositoryInMemorySuite) TestSaveNewURL() {
-	id, err := s.rep.Save(*entity.NewUnstoredShortenedURLInfo(ownerID, dummyURL1))
+	id, err := s.rep.Save(context.Background(), *entity.NewUnstoredShortenedURLInfo(ownerID, dummyURL1))
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), s.m[id].OriginalURL, dummyURL1)
 }
@@ -52,7 +53,7 @@ func (s *URLRepositoryInMemorySuite) TestSaveBatch() {
 	batch := make([]dto.ShortenInBatchRequestItem, 2)
 	batch = append(batch, dto.ShortenInBatchRequestItem{OriginalURL: dummyURL1, CorrelationID: "1"})
 	batch = append(batch, dto.ShortenInBatchRequestItem{OriginalURL: dummyURL2, CorrelationID: "2"})
-	response, err := s.rep.SaveBatch(ownerID, batch)
+	response, err := s.rep.SaveBatch(context.Background(), ownerID, batch)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), dummyURL1, s.m[response["1"]].OriginalURL)
 	assert.Equal(s.T(), dummyURL2, s.m[response["2"]].OriginalURL)
@@ -62,7 +63,7 @@ func (s *URLRepositoryInMemorySuite) TestGetByID() {
 	urlInfo := *entity.NewUnstoredShortenedURLInfo(ownerID, dummyURL1)
 	urlInfo.ID = dummyID1
 	s.m[dummyID1] = urlInfo
-	info, err := s.rep.GetByID(dummyID1)
+	info, err := s.rep.GetByID(context.Background(), dummyID1)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), info.Owner, ownerID)
 	assert.Equal(s.T(), info.OriginalURL, dummyURL1)
@@ -70,7 +71,7 @@ func (s *URLRepositoryInMemorySuite) TestGetByID() {
 }
 
 func (s *URLRepositoryInMemorySuite) TestGetByIDNotFound() {
-	_, err := s.rep.GetByID(dummyID1)
+	_, err := s.rep.GetByID(context.Background(), dummyID1)
 	assert.ErrorIs(s.T(), repository.ErrorItemNotFound, err)
 }
 
@@ -78,7 +79,7 @@ func (s *URLRepositoryInMemorySuite) TestGetByOriginalURL() {
 	urlInfo := *entity.NewUnstoredShortenedURLInfo(ownerID, dummyURL1)
 	urlInfo.ID = dummyID1
 	s.m[dummyID1] = urlInfo
-	info, err := s.rep.GetByOriginalURL(dummyURL1)
+	info, err := s.rep.GetByOriginalURL(context.Background(), dummyURL1)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), info.Owner, ownerID)
 	assert.Equal(s.T(), info.OriginalURL, dummyURL1)
@@ -86,7 +87,7 @@ func (s *URLRepositoryInMemorySuite) TestGetByOriginalURL() {
 }
 
 func (s *URLRepositoryInMemorySuite) TestGetByOriginalURLItemNotFound() {
-	_, err := s.rep.GetByOriginalURL(dummyURL1)
+	_, err := s.rep.GetByOriginalURL(context.Background(), dummyURL1)
 	assert.ErrorIs(s.T(), repository.ErrorItemNotFound, err)
 }
 
@@ -95,7 +96,7 @@ func (s *URLRepositoryInMemorySuite) TestGetAllByOwner() {
 	info2 := createURLInfo(dummyID2, ownerID, dummyURL2)
 	s.m[dummyID1] = info1
 	s.m[dummyID2] = info2
-	infos, err := s.rep.GetAllByOwner(ownerID)
+	infos, err := s.rep.GetAllByOwner(context.Background(), ownerID)
 	assert.NoError(s.T(), err)
 	for _, infoItem := range infos {
 		if infoItem.ID == dummyID1 {
@@ -117,7 +118,7 @@ func (s *URLRepositoryInMemorySuite) TestDeleteURLsInBatch() {
 	s.m[dummyID1] = info1
 	s.m[dummyID2] = info2
 	s.m[dummyID3] = info3
-	err := s.rep.DeleteURLsInBatch(ownerID, []string{dummyID1, dummyID2})
+	err := s.rep.DeleteURLsInBatch(context.Background(), ownerID, []string{dummyID1, dummyID2})
 	assert.NoError(s.T(), err)
 	info1 = s.m[dummyID1]
 	info2 = s.m[dummyID2]

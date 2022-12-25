@@ -5,6 +5,7 @@
 package mocks
 
 import (
+	context "context"
 	reflect "reflect"
 
 	dto "github.com/apolsh/yapr-url-shortener/internal/app/repository/dto"
@@ -48,104 +49,104 @@ func (mr *MockURLRepositoryMockRecorder) Close() *gomock.Call {
 }
 
 // DeleteURLsInBatch mocks base method.
-func (m *MockURLRepository) DeleteURLsInBatch(arg0 string, arg1 []string) error {
+func (m *MockURLRepository) DeleteURLsInBatch(arg0 context.Context, arg1 string, arg2 []string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteURLsInBatch", arg0, arg1)
+	ret := m.ctrl.Call(m, "DeleteURLsInBatch", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteURLsInBatch indicates an expected call of DeleteURLsInBatch.
-func (mr *MockURLRepositoryMockRecorder) DeleteURLsInBatch(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockURLRepositoryMockRecorder) DeleteURLsInBatch(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteURLsInBatch", reflect.TypeOf((*MockURLRepository)(nil).DeleteURLsInBatch), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteURLsInBatch", reflect.TypeOf((*MockURLRepository)(nil).DeleteURLsInBatch), arg0, arg1, arg2)
 }
 
 // GetAllByOwner mocks base method.
-func (m *MockURLRepository) GetAllByOwner(arg0 string) ([]entity.ShortenedURLInfo, error) {
+func (m *MockURLRepository) GetAllByOwner(arg0 context.Context, arg1 string) ([]entity.ShortenedURLInfo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllByOwner", arg0)
+	ret := m.ctrl.Call(m, "GetAllByOwner", arg0, arg1)
 	ret0, _ := ret[0].([]entity.ShortenedURLInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetAllByOwner indicates an expected call of GetAllByOwner.
-func (mr *MockURLRepositoryMockRecorder) GetAllByOwner(arg0 interface{}) *gomock.Call {
+func (mr *MockURLRepositoryMockRecorder) GetAllByOwner(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllByOwner", reflect.TypeOf((*MockURLRepository)(nil).GetAllByOwner), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllByOwner", reflect.TypeOf((*MockURLRepository)(nil).GetAllByOwner), arg0, arg1)
 }
 
 // GetByID mocks base method.
-func (m *MockURLRepository) GetByID(arg0 string) (entity.ShortenedURLInfo, error) {
+func (m *MockURLRepository) GetByID(arg0 context.Context, arg1 string) (entity.ShortenedURLInfo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByID", arg0)
+	ret := m.ctrl.Call(m, "GetByID", arg0, arg1)
 	ret0, _ := ret[0].(entity.ShortenedURLInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetByID indicates an expected call of GetByID.
-func (mr *MockURLRepositoryMockRecorder) GetByID(arg0 interface{}) *gomock.Call {
+func (mr *MockURLRepositoryMockRecorder) GetByID(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockURLRepository)(nil).GetByID), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockURLRepository)(nil).GetByID), arg0, arg1)
 }
 
 // GetByOriginalURL mocks base method.
-func (m *MockURLRepository) GetByOriginalURL(arg0 string) (entity.ShortenedURLInfo, error) {
+func (m *MockURLRepository) GetByOriginalURL(arg0 context.Context, arg1 string) (entity.ShortenedURLInfo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByOriginalURL", arg0)
+	ret := m.ctrl.Call(m, "GetByOriginalURL", arg0, arg1)
 	ret0, _ := ret[0].(entity.ShortenedURLInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetByOriginalURL indicates an expected call of GetByOriginalURL.
-func (mr *MockURLRepositoryMockRecorder) GetByOriginalURL(arg0 interface{}) *gomock.Call {
+func (mr *MockURLRepositoryMockRecorder) GetByOriginalURL(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByOriginalURL", reflect.TypeOf((*MockURLRepository)(nil).GetByOriginalURL), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByOriginalURL", reflect.TypeOf((*MockURLRepository)(nil).GetByOriginalURL), arg0, arg1)
 }
 
 // Ping mocks base method.
-func (m *MockURLRepository) Ping() bool {
+func (m *MockURLRepository) Ping(arg0 context.Context) bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Ping")
+	ret := m.ctrl.Call(m, "Ping", arg0)
 	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
 // Ping indicates an expected call of Ping.
-func (mr *MockURLRepositoryMockRecorder) Ping() *gomock.Call {
+func (mr *MockURLRepositoryMockRecorder) Ping(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockURLRepository)(nil).Ping))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockURLRepository)(nil).Ping), arg0)
 }
 
 // Save mocks base method.
-func (m *MockURLRepository) Save(arg0 entity.ShortenedURLInfo) (string, error) {
+func (m *MockURLRepository) Save(arg0 context.Context, arg1 entity.ShortenedURLInfo) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Save", arg0)
+	ret := m.ctrl.Call(m, "Save", arg0, arg1)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Save indicates an expected call of Save.
-func (mr *MockURLRepositoryMockRecorder) Save(arg0 interface{}) *gomock.Call {
+func (mr *MockURLRepositoryMockRecorder) Save(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockURLRepository)(nil).Save), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockURLRepository)(nil).Save), arg0, arg1)
 }
 
 // SaveBatch mocks base method.
-func (m *MockURLRepository) SaveBatch(arg0 string, arg1 []dto.ShortenInBatchRequestItem) (map[string]string, error) {
+func (m *MockURLRepository) SaveBatch(arg0 context.Context, arg1 string, arg2 []dto.ShortenInBatchRequestItem) (map[string]string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SaveBatch", arg0, arg1)
+	ret := m.ctrl.Call(m, "SaveBatch", arg0, arg1, arg2)
 	ret0, _ := ret[0].(map[string]string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SaveBatch indicates an expected call of SaveBatch.
-func (mr *MockURLRepositoryMockRecorder) SaveBatch(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockURLRepositoryMockRecorder) SaveBatch(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveBatch", reflect.TypeOf((*MockURLRepository)(nil).SaveBatch), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveBatch", reflect.TypeOf((*MockURLRepository)(nil).SaveBatch), arg0, arg1, arg2)
 }

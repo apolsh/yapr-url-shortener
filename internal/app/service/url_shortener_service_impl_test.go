@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"reflect"
 	"testing"
@@ -39,33 +40,33 @@ func (s *URLShortenerServiceSuite) SetupTest() {
 }
 
 func (s *URLShortenerServiceSuite) TestGetShortenURLFromID() {
-	resp := s.service.GetShortenURLFromID("123")
+	resp := s.service.GetShortenURLFromID(context.Background(), "123")
 
 	assert.Equal(s.T(), hostAddress+"/"+"123", resp)
 }
 
 func (s *URLShortenerServiceSuite) TestGetURLByIDItemExist() {
-	s.repo.EXPECT().GetByID("123").Return(entity.ShortenedURLInfo{OriginalURL: longURL1}, nil)
-	res, err := s.service.GetURLByID("123")
+	s.repo.EXPECT().GetByID(context.Background(), "123").Return(entity.ShortenedURLInfo{OriginalURL: longURL1}, nil)
+	res, err := s.service.GetURLByID(context.Background(), "123")
 
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), longURL1, res)
 }
 
 func (s *URLShortenerServiceSuite) TestGetURLByIDItemDoesNotExist() {
-	s.repo.EXPECT().GetByID("123").Return(entity.ShortenedURLInfo{}, ErrorItemIsDeleted)
-	_, err := s.service.GetURLByID("123")
+	s.repo.EXPECT().GetByID(context.Background(), "123").Return(entity.ShortenedURLInfo{}, ErrorItemIsDeleted)
+	_, err := s.service.GetURLByID(context.Background(), "123")
 
 	assert.Equal(s.T(), err, ErrorItemIsDeleted)
 }
 
 func (s *URLShortenerServiceSuite) TestGetURLsByOwnerIDWithSuccess() {
 	owner := "owner"
-	s.repo.EXPECT().GetAllByOwner(owner).Return([]entity.ShortenedURLInfo{
+	s.repo.EXPECT().GetAllByOwner(context.Background(), owner).Return([]entity.ShortenedURLInfo{
 		{OriginalURL: longURL1, ID: "123"},
 		{OriginalURL: longURL2, ID: "456"},
 	}, nil)
-	pairs, err := s.service.GetURLsByOwnerID(owner)
+	pairs, err := s.service.GetURLsByOwnerID(context.Background(), owner)
 
 	expected := []dto.URLPair{
 		{OriginalURL: longURL1, ShortURL: hostAddress + "/" + "123"},
@@ -80,7 +81,7 @@ func (s *URLShortenerServiceSuite) TestGetURLsByOwnerIDWithSuccess() {
 func (s *URLShortenerServiceSuite) TestGetURLsByOwnerIDWithError() {
 	owner := "owner"
 	err := errors.New("new err")
-	s.repo.EXPECT().GetAllByOwner(owner).Return([]entity.ShortenedURLInfo{}, err)
-	_, errRes := s.service.GetURLsByOwnerID(owner)
+	s.repo.EXPECT().GetAllByOwner(context.Background(), owner).Return([]entity.ShortenedURLInfo{}, err)
+	_, errRes := s.service.GetURLsByOwnerID(context.Background(), owner)
 	assert.Equal(s.T(), err, errRes)
 }

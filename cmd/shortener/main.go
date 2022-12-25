@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	_ "embed"
 	"fmt"
-	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -29,6 +28,8 @@ var (
 	buildVersion = "N/A"
 	buildDate    = "N/A"
 	buildCommit  = "N/A"
+
+	log = logger.LoggerOfComponent("main")
 )
 
 //go:embed tls/cert.pem
@@ -59,9 +60,8 @@ func main() {
 		urlShortenerStorage, err = inmemory.NewURLRepositoryInMemory(make(map[string]entity.ShortenedURLInfo), cfg.FileStoragePath)
 	}
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
-	defer urlShortenerStorage.Close()
 
 	urlShortenerService := service.NewURLShortenerService(urlShortenerStorage, cfg.BaseURL)
 	httpRouter.NewRouter(router, urlShortenerService, authCryptoProvider)
@@ -73,11 +73,9 @@ func main() {
 
 	signal.Notify(quit, os.Interrupt)
 
-	logger := log.New(os.Stdout, "http: ", log.LstdFlags)
 	server := &http.Server{
 		Addr:         cfg.ServerAddress,
 		Handler:      router,
-		ErrorLog:     logger,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  15 * time.Second,
@@ -85,38 +83,39 @@ func main() {
 
 	go func() {
 		<-quit
-		log.Println("server is shutting down...")
+		log.Info("server is shutting down...")
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
 		server.SetKeepAlivesEnabled(false)
 		if err := server.Shutdown(ctx); err != nil {
-			logger.Fatalf("Could not gracefully shutdown the server: %v\n", err)
+			log.Fatal(fmt.Errorf("Could not gracefully shutdown the server: %v\n", err))
 		}
+		urlShortenerStorage.Close()
 		close(done)
 	}()
 
-	logger.Println("Server is ready to handle requests at", cfg.ServerAddress)
+	log.Info("Server is ready to handle requests at " + cfg.ServerAddress)
 
 	if cfg.HTTPSEnabled {
 		cer, err := tls.X509KeyPair(tlsCert, tlsKey)
 		if err != nil {
-			log.Println(err)
+			log.Error(err)
 			return
 		}
 
 		server.TLSConfig = &tls.Config{Certificates: []tls.Certificate{cer}}
 
 		if err := server.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
-			logger.Fatalf("Could not listen on %s: %v\n", cfg.ServerAddress, err)
+			log.Fatal(fmt.Errorf("Could not listen on %s: %v\n", cfg.ServerAddress, err))
 		}
 	} else {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Fatalf("Could not listen on %s: %v\n", cfg.ServerAddress, err)
+			log.Fatal(fmt.Errorf("Could not listen on %s: %v\n", cfg.ServerAddress, err))
 		}
 	}
 
 	<-done
-	logger.Println("Server stopped")
+	log.Info("Server stopped")
 }

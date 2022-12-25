@@ -66,8 +66,8 @@ func NewRouter(r *chi.Mux, serviceImpl service.URLShortenerService, provider cry
 }
 
 // PingDB проверяет работу хранилища URL
-func (c *Controller) PingDB(w http.ResponseWriter, _ *http.Request) {
-	ok := c.shortenService.PingDB()
+func (c *Controller) PingDB(w http.ResponseWriter, r *http.Request) {
+	ok := c.shortenService.PingDB(r.Context())
 	if ok {
 		w.WriteHeader(200)
 	} else {
@@ -78,7 +78,7 @@ func (c *Controller) PingDB(w http.ResponseWriter, _ *http.Request) {
 // GetShortenURLByID производит редирект на сохраненный ранее в хранилище URL
 func (c *Controller) GetShortenURLByID(w http.ResponseWriter, r *http.Request) {
 	if urlID := chi.URLParam(r, "urlID"); urlID != "" {
-		foundURL, err := c.shortenService.GetURLByID(urlID)
+		foundURL, err := c.shortenService.GetURLByID(r.Context(), urlID)
 		if errors.Is(repository.ErrorItemNotFound, err) {
 			http.NotFound(w, r)
 			return
@@ -96,7 +96,7 @@ func (c *Controller) GetShortenURLByID(w http.ResponseWriter, r *http.Request) {
 // GetShortenURLsByUser возвращает список пар (короткий + длинный) URL пользователя
 func (c *Controller) GetShortenURLsByUser(w http.ResponseWriter, r *http.Request) {
 	ownerID := r.Context().Value(customMiddleware.OwnerID).(string)
-	urlPairs, err := c.shortenService.GetURLsByOwnerID(ownerID)
+	urlPairs, err := c.shortenService.GetURLsByOwnerID(r.Context(), ownerID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -134,10 +134,10 @@ func (c *Controller) SaveShortenURL(w http.ResponseWriter, r *http.Request) {
 	var urlID string
 	statusCode := 201
 	ownerID := r.Context().Value(customMiddleware.OwnerID).(string)
-	urlID, err = c.shortenService.AddNewURL(*entity.NewUnstoredShortenedURLInfo(ownerID, urlString))
+	urlID, err = c.shortenService.AddNewURL(r.Context(), *entity.NewUnstoredShortenedURLInfo(ownerID, urlString))
 	if err != nil {
 		if errors.Is(err, repository.ErrorURLAlreadyStored) {
-			info, err := c.shortenService.GetByOriginalURL(urlString)
+			info, err := c.shortenService.GetByOriginalURL(r.Context(), urlString)
 			urlID = info.GetID()
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -148,7 +148,7 @@ func (c *Controller) SaveShortenURL(w http.ResponseWriter, r *http.Request) {
 	}
 	setContentType(w, "text/plain; charset=utf-8")
 	w.WriteHeader(statusCode)
-	_, err = w.Write([]byte(c.shortenService.GetShortenURLFromID(urlID)))
+	_, err = w.Write([]byte(c.shortenService.GetShortenURLFromID(r.Context(), urlID)))
 	if err != nil {
 		http.Error(w, encodeResponseBodyError, http.StatusInternalServerError)
 	}
@@ -165,7 +165,7 @@ func (c *Controller) SaveShortenURLsInBatch(w http.ResponseWriter, r *http.Reque
 	}
 
 	ownerID := r.Context().Value(customMiddleware.OwnerID).(string)
-	batch, err := c.shortenService.AddNewURLsInBatch(ownerID, body)
+	batch, err := c.shortenService.AddNewURLsInBatch(r.Context(), ownerID, body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -196,10 +196,10 @@ func (c *Controller) SaveShortenURLJSON(w http.ResponseWriter, r *http.Request) 
 	statusCode := 201
 	info := *entity.NewUnstoredShortenedURLInfo(ownerID, body.URL)
 
-	urlID, err := c.shortenService.AddNewURL(info)
+	urlID, err := c.shortenService.AddNewURL(r.Context(), info)
 	if err != nil {
 		if errors.Is(err, repository.ErrorURLAlreadyStored) {
-			info, err := c.shortenService.GetByOriginalURL(body.URL)
+			info, err := c.shortenService.GetByOriginalURL(r.Context(), body.URL)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -210,7 +210,7 @@ func (c *Controller) SaveShortenURLJSON(w http.ResponseWriter, r *http.Request) 
 	}
 	setContentType(w, applicationJSON)
 	w.WriteHeader(statusCode)
-	if err := json.NewEncoder(w).Encode(&SaveURLResponse{Result: c.shortenService.GetShortenURLFromID(urlID)}); err != nil {
+	if err := json.NewEncoder(w).Encode(&SaveURLResponse{Result: c.shortenService.GetShortenURLFromID(r.Context(), urlID)}); err != nil {
 		http.Error(w, encodeResponseBodyError, http.StatusInternalServerError)
 	}
 }
@@ -225,7 +225,7 @@ func (c *Controller) DeleteShortenURLsInBatch(w http.ResponseWriter, r *http.Req
 	}
 
 	ownerID := r.Context().Value(customMiddleware.OwnerID).(string)
-	err = c.shortenService.DeleteURLsInBatch(ownerID, ids)
+	err = c.shortenService.DeleteURLsInBatch(r.Context(), ownerID, ids)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
