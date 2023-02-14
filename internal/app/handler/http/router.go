@@ -4,7 +4,9 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -35,12 +37,17 @@ const (
 	applicationJSON = "application/json; charset=utf-8"
 )
 
+const (
+	realIPHeader = "X-Real-IP"
+)
+
 type Controller struct {
 	shortenService service.URLShortenerService
+	trustedSubnet  *net.IPNet
 }
 
-func NewRouter(r *chi.Mux, serviceImpl service.URLShortenerService, provider crypto.CryptographicProvider) {
-	c := &Controller{shortenService: serviceImpl}
+func NewRouter(r *chi.Mux, serviceImpl service.URLShortenerService, provider crypto.CryptographicProvider, trustedSubnet *net.IPNet) {
+	c := &Controller{shortenService: serviceImpl, trustedSubnet: trustedSubnet}
 
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
@@ -58,6 +65,7 @@ func NewRouter(r *chi.Mux, serviceImpl service.URLShortenerService, provider cry
 		})
 		r.With(customMiddleware.JSONFilterMiddleware).Group(func(r chi.Router) {
 			r.Route("/api", func(r chi.Router) {
+				r.Get("/internal/stats", c.GetAppStats)
 				r.Post("/shorten/batch", c.SaveShortenURLsInBatch)
 				r.Post("/shorten", c.SaveShortenURLJSON)
 				r.Delete("/user/urls", c.DeleteShortenURLsInBatch)
@@ -251,6 +259,34 @@ func (c *Controller) DeleteShortenURLsInBatch(w http.ResponseWriter, r *http.Req
 		return
 	}
 	w.WriteHeader(http.StatusAccepted)
+}
+
+func (c *Controller) GetAppStats(w http.ResponseWriter, r *http.Request) {
+	stringIP := r.Header.Get(realIPHeader)
+
+	ip := net.ParseIP(stringIP)
+	if ip == nil {
+		log.Error(errors.New(fmt.Sprintf("unable to parse %s to IP", stringIP)))
+		http.Error(w, "", http.StatusForbidden)
+		return
+	}
+
+	if !c.trustedSubnet.Contains(ip) {
+		http.Error(w, "", http.StatusForbidden)
+		return
+	}
+
+	statistic, err := c.shortenService.GetAppStatistic(r.Context())
+	if err != nil {
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
+
+	setContentType(w, applicationJSON)
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(statistic); err != nil {
+		http.Error(w, encodeResponseBodyError, http.StatusInternalServerError)
+	}
 }
 
 func setContentType(w http.ResponseWriter, contentType string) {

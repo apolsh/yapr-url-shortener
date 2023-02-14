@@ -72,3 +72,7 @@ func (r *URLShortenerServiceImpl) DeleteURLsInBatch(ctx context.Context, owner s
 func (r *URLShortenerServiceImpl) GetShortenURLFromID(_ context.Context, id string) string {
 	return fmt.Sprintf("%s/%s", r.hostAddress, id)
 }
+
+func (r *URLShortenerServiceImpl) GetAppStatistic(ctx context.Context) (dto.AppStatisticItem, error) {
+	return r.repository.GetAppStatistic(ctx)
+}

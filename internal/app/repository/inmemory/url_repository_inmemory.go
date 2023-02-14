@@ -16,6 +16,8 @@ import (
 	"github.com/apolsh/yapr-url-shortener/internal/logger"
 )
 
+type void struct{}
+
 var log = logger.LoggerOfComponent("in-memory-repo")
 
 type backupStorage interface {
@@ -194,4 +196,15 @@ func (r *URLRepositoryInMemory) Close() {
 
 func (r *URLRepositoryInMemory) Ping(_ context.Context) bool {
 	return true
+}
+
+func (r *URLRepositoryInMemory) GetAppStatistic(_ context.Context) (dto.AppStatisticItem, error) {
+	uniqOwners := make(map[string]void, 0)
+	for _, urlInfo := range r.Storage {
+		uniqOwners[urlInfo.Owner] = void{}
+	}
+
+	users := len(uniqOwners)
+	urls := len(r.Storage)
+	return dto.AppStatisticItem{Users: users, URLs: urls}, nil
 }

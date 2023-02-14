@@ -35,6 +35,8 @@ type URLRepository interface {
 
 	// DeleteURLsInBatch помечает как удаленные URL, переданные в списке и принадлежащие указанному пользователю
 	DeleteURLsInBatch(ctx context.Context, owner string, ids []string) error
+
+	GetAppStatistic(ctx context.Context) (dto.AppStatisticItem, error)
 }
 
 var ErrorItemNotFound = errors.New("item not found")

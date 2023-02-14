@@ -33,6 +33,8 @@ type URLShortenerService interface {
 
 	//GetShortenURLFromID создает укороченный URL основываясь на идентификаторе сохраненного URL
 	GetShortenURLFromID(ctx context.Context, id string) string
+
+	GetAppStatistic(ctx context.Context) (dto.AppStatisticItem, error)
 }
 
 var ErrorItemIsDeleted = errors.New("item is marked as deleted")

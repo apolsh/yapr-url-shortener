@@ -65,7 +65,7 @@ func main() {
 	}
 
 	urlShortenerService := service.NewURLShortenerService(urlShortenerStorage, cfg.BaseURL)
-	httpRouter.NewRouter(router, urlShortenerService, authCryptoProvider)
+	httpRouter.NewRouter(router, urlShortenerService, authCryptoProvider, cfg.GetTrustedSubnet())
 
 	router.Mount("/debug", middleware.Profiler())
 

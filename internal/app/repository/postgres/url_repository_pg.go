@@ -222,6 +222,21 @@ func (repo *URLRepositoryPG) DeleteURLsInBatch(_ context.Context, owner string, 
 	return nil
 }
 
+func (repo *URLRepositoryPG) GetAppStatistic(ctx context.Context) (dto.AppStatisticItem, error) {
+	var res dto.AppStatisticItem
+
+	err := repo.DB.QueryRow(ctx, "SELECT COUNT(*) FROM shortened_urls").Scan(&res.URLs)
+	if err != nil {
+		return res, err
+	}
+	err = repo.DB.QueryRow(ctx, "SELECT COUNT(DISTINCT owner) FROM shortened_urls").Scan(&res.Users)
+	if err != nil {
+		return res, err
+	}
+
+	return res, nil
+}
+
 func (repo *URLRepositoryPG) Close() {
 	repo.DB.Close()
 	repo.AsyncWorker.close()

@@ -14,6 +14,7 @@ require (
 	github.com/rs/xid v1.4.0
 	github.com/rs/zerolog v1.28.0
 	github.com/stretchr/testify v1.8.0
+	golang.org/x/sync v0.1.0
 	golang.org/x/tools v0.4.0
 	honnef.co/go/tools v0.3.3
 )
