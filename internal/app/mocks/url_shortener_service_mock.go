@@ -5,6 +5,7 @@
 package mocks
 
 import (
+	context "context"
 	reflect "reflect"
 
 	dto "github.com/apolsh/yapr-url-shortener/internal/app/repository/dto"
@@ -36,118 +37,118 @@ func (m *MockURLShortenerService) EXPECT() *MockURLShortenerServiceMockRecorder 
 }
 
 // AddNewURL mocks base method.
-func (m *MockURLShortenerService) AddNewURL(arg0 entity.ShortenedURLInfo) (string, error) {
+func (m *MockURLShortenerService) AddNewURL(arg0 context.Context, arg1 entity.ShortenedURLInfo) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddNewURL", arg0)
+	ret := m.ctrl.Call(m, "AddNewURL", arg0, arg1)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // AddNewURL indicates an expected call of AddNewURL.
-func (mr *MockURLShortenerServiceMockRecorder) AddNewURL(arg0 interface{}) *gomock.Call {
+func (mr *MockURLShortenerServiceMockRecorder) AddNewURL(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddNewURL", reflect.TypeOf((*MockURLShortenerService)(nil).AddNewURL), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddNewURL", reflect.TypeOf((*MockURLShortenerService)(nil).AddNewURL), arg0, arg1)
 }
 
 // AddNewURLsInBatch mocks base method.
-func (m *MockURLShortenerService) AddNewURLsInBatch(arg0 string, arg1 []dto.ShortenInBatchRequestItem) ([]dto.ShortenInBatchResponseItem, error) {
+func (m *MockURLShortenerService) AddNewURLsInBatch(arg0 context.Context, arg1 string, arg2 []dto.ShortenInBatchRequestItem) ([]dto.ShortenInBatchResponseItem, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddNewURLsInBatch", arg0, arg1)
+	ret := m.ctrl.Call(m, "AddNewURLsInBatch", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]dto.ShortenInBatchResponseItem)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // AddNewURLsInBatch indicates an expected call of AddNewURLsInBatch.
-func (mr *MockURLShortenerServiceMockRecorder) AddNewURLsInBatch(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockURLShortenerServiceMockRecorder) AddNewURLsInBatch(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddNewURLsInBatch", reflect.TypeOf((*MockURLShortenerService)(nil).AddNewURLsInBatch), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddNewURLsInBatch", reflect.TypeOf((*MockURLShortenerService)(nil).AddNewURLsInBatch), arg0, arg1, arg2)
 }
 
 // DeleteURLsInBatch mocks base method.
-func (m *MockURLShortenerService) DeleteURLsInBatch(arg0 string, arg1 []string) error {
+func (m *MockURLShortenerService) DeleteURLsInBatch(arg0 context.Context, arg1 string, arg2 []string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteURLsInBatch", arg0, arg1)
+	ret := m.ctrl.Call(m, "DeleteURLsInBatch", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteURLsInBatch indicates an expected call of DeleteURLsInBatch.
-func (mr *MockURLShortenerServiceMockRecorder) DeleteURLsInBatch(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockURLShortenerServiceMockRecorder) DeleteURLsInBatch(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteURLsInBatch", reflect.TypeOf((*MockURLShortenerService)(nil).DeleteURLsInBatch), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteURLsInBatch", reflect.TypeOf((*MockURLShortenerService)(nil).DeleteURLsInBatch), arg0, arg1, arg2)
 }
 
 // GetByOriginalURL mocks base method.
-func (m *MockURLShortenerService) GetByOriginalURL(arg0 string) (entity.ShortenedURLInfo, error) {
+func (m *MockURLShortenerService) GetByOriginalURL(arg0 context.Context, arg1 string) (entity.ShortenedURLInfo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByOriginalURL", arg0)
+	ret := m.ctrl.Call(m, "GetByOriginalURL", arg0, arg1)
 	ret0, _ := ret[0].(entity.ShortenedURLInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetByOriginalURL indicates an expected call of GetByOriginalURL.
-func (mr *MockURLShortenerServiceMockRecorder) GetByOriginalURL(arg0 interface{}) *gomock.Call {
+func (mr *MockURLShortenerServiceMockRecorder) GetByOriginalURL(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByOriginalURL", reflect.TypeOf((*MockURLShortenerService)(nil).GetByOriginalURL), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByOriginalURL", reflect.TypeOf((*MockURLShortenerService)(nil).GetByOriginalURL), arg0, arg1)
 }
 
 // GetShortenURLFromID mocks base method.
-func (m *MockURLShortenerService) GetShortenURLFromID(arg0 string) string {
+func (m *MockURLShortenerService) GetShortenURLFromID(arg0 context.Context, arg1 string) string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetShortenURLFromID", arg0)
+	ret := m.ctrl.Call(m, "GetShortenURLFromID", arg0, arg1)
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
 // GetShortenURLFromID indicates an expected call of GetShortenURLFromID.
-func (mr *MockURLShortenerServiceMockRecorder) GetShortenURLFromID(arg0 interface{}) *gomock.Call {
+func (mr *MockURLShortenerServiceMockRecorder) GetShortenURLFromID(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetShortenURLFromID", reflect.TypeOf((*MockURLShortenerService)(nil).GetShortenURLFromID), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetShortenURLFromID", reflect.TypeOf((*MockURLShortenerService)(nil).GetShortenURLFromID), arg0, arg1)
 }
 
 // GetURLByID mocks base method.
-func (m *MockURLShortenerService) GetURLByID(arg0 string) (string, error) {
+func (m *MockURLShortenerService) GetURLByID(arg0 context.Context, arg1 string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetURLByID", arg0)
+	ret := m.ctrl.Call(m, "GetURLByID", arg0, arg1)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetURLByID indicates an expected call of GetURLByID.
-func (mr *MockURLShortenerServiceMockRecorder) GetURLByID(arg0 interface{}) *gomock.Call {
+func (mr *MockURLShortenerServiceMockRecorder) GetURLByID(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetURLByID", reflect.TypeOf((*MockURLShortenerService)(nil).GetURLByID), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetURLByID", reflect.TypeOf((*MockURLShortenerService)(nil).GetURLByID), arg0, arg1)
 }
 
 // GetURLsByOwnerID mocks base method.
-func (m *MockURLShortenerService) GetURLsByOwnerID(arg0 string) ([]dto.URLPair, error) {
+func (m *MockURLShortenerService) GetURLsByOwnerID(arg0 context.Context, arg1 string) ([]dto.URLPair, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetURLsByOwnerID", arg0)
+	ret := m.ctrl.Call(m, "GetURLsByOwnerID", arg0, arg1)
 	ret0, _ := ret[0].([]dto.URLPair)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetURLsByOwnerID indicates an expected call of GetURLsByOwnerID.
-func (mr *MockURLShortenerServiceMockRecorder) GetURLsByOwnerID(arg0 interface{}) *gomock.Call {
+func (mr *MockURLShortenerServiceMockRecorder) GetURLsByOwnerID(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetURLsByOwnerID", reflect.TypeOf((*MockURLShortenerService)(nil).GetURLsByOwnerID), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetURLsByOwnerID", reflect.TypeOf((*MockURLShortenerService)(nil).GetURLsByOwnerID), arg0, arg1)
 }
 
 // PingDB mocks base method.
-func (m *MockURLShortenerService) PingDB() bool {
+func (m *MockURLShortenerService) PingDB(arg0 context.Context) bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PingDB")
+	ret := m.ctrl.Call(m, "PingDB", arg0)
 	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
 // PingDB indicates an expected call of PingDB.
-func (mr *MockURLShortenerServiceMockRecorder) PingDB() *gomock.Call {
+func (mr *MockURLShortenerServiceMockRecorder) PingDB(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PingDB", reflect.TypeOf((*MockURLShortenerService)(nil).PingDB))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PingDB", reflect.TypeOf((*MockURLShortenerService)(nil).PingDB), arg0)
 }

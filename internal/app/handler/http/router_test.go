@@ -50,7 +50,7 @@ func (s *RouterSuite) SetupTest() {
 }
 
 func (s *RouterSuite) TestGetShortenURLByIDWithSuccess() {
-	s.shorts.EXPECT().GetURLByID("some_id").Return("http://rediercted.com/url", nil)
+	s.shorts.EXPECT().GetURLByID(gomock.Any(), "some_id").Return("http://rediercted.com/url", nil)
 	req := httptest.NewRequest(http.MethodGet, "/some_id", nil)
 	resp := httptest.NewRecorder()
 
@@ -61,7 +61,7 @@ func (s *RouterSuite) TestGetShortenURLByIDWithSuccess() {
 }
 
 func (s *RouterSuite) TestGetShortenURLByIDNotFound() {
-	s.shorts.EXPECT().GetURLByID("some_id").Return("", repository.ErrorItemNotFound)
+	s.shorts.EXPECT().GetURLByID(gomock.Any(), "some_id").Return("", repository.ErrorItemNotFound)
 	req := httptest.NewRequest(http.MethodGet, "/some_id", nil)
 	resp := httptest.NewRecorder()
 
@@ -71,7 +71,7 @@ func (s *RouterSuite) TestGetShortenURLByIDNotFound() {
 }
 
 func (s *RouterSuite) TestGetShortenURLByIDItemDeleted() {
-	s.shorts.EXPECT().GetURLByID("some_id").Return("", service.ErrorItemIsDeleted)
+	s.shorts.EXPECT().GetURLByID(gomock.Any(), "some_id").Return("", service.ErrorItemIsDeleted)
 	req := httptest.NewRequest(http.MethodGet, "/some_id", nil)
 	resp := httptest.NewRecorder()
 
@@ -90,7 +90,7 @@ func (s *RouterSuite) TestGetShortenURLByIDNoID() {
 }
 
 func (s *RouterSuite) TestPingWithOk() {
-	s.shorts.EXPECT().PingDB().Return(true)
+	s.shorts.EXPECT().PingDB(gomock.Any()).Return(true)
 	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
 	resp := httptest.NewRecorder()
 
@@ -100,7 +100,7 @@ func (s *RouterSuite) TestPingWithOk() {
 }
 
 func (s *RouterSuite) TestPingNotOk() {
-	s.shorts.EXPECT().PingDB().Return(false)
+	s.shorts.EXPECT().PingDB(gomock.Any()).Return(false)
 	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
 	resp := httptest.NewRecorder()
 
@@ -110,7 +110,7 @@ func (s *RouterSuite) TestPingNotOk() {
 }
 
 func (s *RouterSuite) TestGetShortenURLsByUserSomeFound() {
-	s.shorts.EXPECT().GetURLsByOwnerID(gomock.Any()).Return([]dto.URLPair{
+	s.shorts.EXPECT().GetURLsByOwnerID(gomock.Any(), gomock.Any()).Return([]dto.URLPair{
 		{ShortURL: shortURL1, OriginalURL: longURL1},
 		{ShortURL: shortURL2, OriginalURL: longURL2},
 	}, nil)
@@ -126,7 +126,7 @@ func (s *RouterSuite) TestGetShortenURLsByUserSomeFound() {
 }
 
 func (s *RouterSuite) TestGetShortenURLsByUserZeroResult() {
-	s.shorts.EXPECT().GetURLsByOwnerID(gomock.Any()).Return([]dto.URLPair{}, nil)
+	s.shorts.EXPECT().GetURLsByOwnerID(gomock.Any(), gomock.Any()).Return([]dto.URLPair{}, nil)
 	req := httptest.NewRequest(http.MethodGet, "/api/user/urls", nil)
 	resp := httptest.NewRecorder()
 
@@ -136,7 +136,7 @@ func (s *RouterSuite) TestGetShortenURLsByUserZeroResult() {
 }
 
 func (s *RouterSuite) TestGetShortenURLsByUserSomeError() {
-	s.shorts.EXPECT().GetURLsByOwnerID(gomock.Any()).Return(nil, service.ErrorItemIsDeleted)
+	s.shorts.EXPECT().GetURLsByOwnerID(gomock.Any(), gomock.Any()).Return(nil, service.ErrorItemIsDeleted)
 	req := httptest.NewRequest(http.MethodGet, "/api/user/urls", nil)
 	resp := httptest.NewRecorder()
 
@@ -166,8 +166,8 @@ func (s *RouterSuite) TestSaveShortenURLWrongURLType() {
 }
 
 func (s *RouterSuite) TestSaveShortenURLNewURLSaved() {
-	s.shorts.EXPECT().AddNewURL(gomock.Any()).Return("123", nil)
-	s.shorts.EXPECT().GetShortenURLFromID("123").Return(shortURL1)
+	s.shorts.EXPECT().AddNewURL(gomock.Any(), gomock.Any()).Return("123", nil)
+	s.shorts.EXPECT().GetShortenURLFromID(gomock.Any(), "123").Return(shortURL1)
 	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(longURL1))
 	req.Header.Set("Content-Type", "text/plain")
 	resp := httptest.NewRecorder()
@@ -180,9 +180,9 @@ func (s *RouterSuite) TestSaveShortenURLNewURLSaved() {
 }
 
 func (s *RouterSuite) TestSaveShortenURLAlreadySaved() {
-	s.shorts.EXPECT().AddNewURL(gomock.Any()).Return("", repository.ErrorURLAlreadyStored)
-	s.shorts.EXPECT().GetByOriginalURL(longURL1).Return(entity.ShortenedURLInfo{ID: "123"}, nil)
-	s.shorts.EXPECT().GetShortenURLFromID("123").Return(shortURL1)
+	s.shorts.EXPECT().AddNewURL(gomock.Any(), gomock.Any()).Return("", repository.ErrorURLAlreadyStored)
+	s.shorts.EXPECT().GetByOriginalURL(gomock.Any(), longURL1).Return(entity.ShortenedURLInfo{ID: "123"}, nil)
+	s.shorts.EXPECT().GetShortenURLFromID(gomock.Any(), "123").Return(shortURL1)
 	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(longURL1))
 	req.Header.Set("Content-Type", "text/plain")
 	resp := httptest.NewRecorder()
@@ -206,7 +206,7 @@ func (s *RouterSuite) TestSaveShortenURLsInBatchWrongType() {
 
 func (s *RouterSuite) TestSaveShortenURLsInBatchWithSuccess() {
 
-	s.shorts.EXPECT().AddNewURLsInBatch(gomock.Any(), gomock.Any()).Return([]dto.ShortenInBatchResponseItem{
+	s.shorts.EXPECT().AddNewURLsInBatch(gomock.Any(), gomock.Any(), gomock.Any()).Return([]dto.ShortenInBatchResponseItem{
 		{CorrelationID: "1", ShortURL: shortURL1},
 		{CorrelationID: "2", ShortURL: shortURL2},
 	}, nil)
@@ -235,8 +235,8 @@ func (s *RouterSuite) TestSaveShortenURLsInBatchWithSuccess() {
 }
 
 func (s *RouterSuite) TestSaveShortenURLJSONWithSuccess() {
-	s.shorts.EXPECT().AddNewURL(gomock.Any()).Return("123", nil)
-	s.shorts.EXPECT().GetShortenURLFromID("123").Return(shortURL1)
+	s.shorts.EXPECT().AddNewURL(gomock.Any(), gomock.Any()).Return("123", nil)
+	s.shorts.EXPECT().GetShortenURLFromID(gomock.Any(), "123").Return(shortURL1)
 	req := httptest.NewRequest(http.MethodPost, "/api/shorten", strings.NewReader(`{"url":"https://golangdocs.com/golang-read-json-file"}`))
 	req.Header.Set("Content-Type", "application/json")
 	resp := httptest.NewRecorder()
@@ -261,9 +261,9 @@ func (s *RouterSuite) TestSaveShortenURLJSONInvalidURL() {
 }
 
 func (s *RouterSuite) TestSaveShortenURLJSONErrorURLAlreadyStored() {
-	s.shorts.EXPECT().AddNewURL(gomock.Any()).Return("", repository.ErrorURLAlreadyStored)
-	s.shorts.EXPECT().GetByOriginalURL(longURL1).Return(entity.ShortenedURLInfo{ID: "123"}, nil)
-	s.shorts.EXPECT().GetShortenURLFromID("123").Return(shortURL1)
+	s.shorts.EXPECT().AddNewURL(gomock.Any(), gomock.Any()).Return("", repository.ErrorURLAlreadyStored)
+	s.shorts.EXPECT().GetByOriginalURL(gomock.Any(), longURL1).Return(entity.ShortenedURLInfo{ID: "123"}, nil)
+	s.shorts.EXPECT().GetShortenURLFromID(gomock.Any(), "123").Return(shortURL1)
 	req := httptest.NewRequest(http.MethodPost, "/api/shorten", strings.NewReader(`{"url":"`+longURL1+`"}`))
 	req.Header.Set("Content-Type", "application/json")
 	resp := httptest.NewRecorder()
@@ -277,7 +277,7 @@ func (s *RouterSuite) TestSaveShortenURLJSONErrorURLAlreadyStored() {
 }
 
 func (s *RouterSuite) TestDeleteShortenURLsInBatchWithSuccess() {
-	s.shorts.EXPECT().DeleteURLsInBatch(gomock.Any(), gomock.Any()).Return(nil)
+	s.shorts.EXPECT().DeleteURLsInBatch(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 	req := httptest.NewRequest(http.MethodDelete, "/api/user/urls", strings.NewReader(`["123","456"]`))
 	req.Header.Set("Content-Type", "application/json")
 	resp := httptest.NewRecorder()
@@ -288,7 +288,7 @@ func (s *RouterSuite) TestDeleteShortenURLsInBatchWithSuccess() {
 }
 
 func (s *RouterSuite) TestDeleteShortenURLsInBatchWithError() {
-	s.shorts.EXPECT().DeleteURLsInBatch(gomock.Any(), gomock.Any()).Return(service.ErrorItemIsDeleted)
+	s.shorts.EXPECT().DeleteURLsInBatch(gomock.Any(), gomock.Any(), gomock.Any()).Return(service.ErrorItemIsDeleted)
 	req := httptest.NewRequest(http.MethodDelete, "/api/user/urls", strings.NewReader(`["123","456"]`))
 	req.Header.Set("Content-Type", "application/json")
 	resp := httptest.NewRecorder()

@@ -1,40 +1,54 @@
-package repository
+package postgres
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"runtime"
+	"sync"
 	"time"
 
+	"github.com/apolsh/yapr-url-shortener/internal/app/repository"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/dto"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
+	"github.com/apolsh/yapr-url-shortener/internal/logger"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
-const preparedSaveBatchStatement = "SAVE_BATCH_STATEMENT"
-const preparedMarkAsDeletedStatement = "MARK_AS_DELETED_STATEMENT"
-const constraintOriginalURL = "shortened_urls_original_url_uindex"
+const (
+	preparedSaveBatchStatement     = "SAVE_BATCH_STATEMENT"
+	preparedMarkAsDeletedStatement = "MARK_AS_DELETED_STATEMENT"
+	constraintOriginalURL          = "shortened_urls_original_url_uindex"
+)
+
+var (
+	workerLogger = logger.LoggerOfComponent("db-async-worker")
+	dbLogger     = logger.LoggerOfComponent("url-db-pg")
+)
 
 type workerTask struct {
-	ctx   context.Context
 	query string
 	args  []interface{}
 }
 
-func NewWorkerTask(ctx context.Context, query string, args ...interface{}) *workerTask {
-	return &workerTask{ctx: ctx, query: query, args: args}
+func NewWorkerTask(query string, args ...interface{}) *workerTask {
+	return &workerTask{query: query, args: args}
 }
 
 type AsyncDBTransactionWorker struct {
 	workerTaskCh chan workerTask
+	wg           sync.WaitGroup
 }
 
 func (w *AsyncDBTransactionWorker) executeTask(task *workerTask) {
+	w.wg.Add(1)
 	w.workerTaskCh <- *task
+}
+
+func (w *AsyncDBTransactionWorker) close() {
+	waitWithTimeout(&w.wg, 5*time.Second)
 }
 
 func newAsyncDBTransactionWorker(conn *pgxpool.Pool) *AsyncDBTransactionWorker {
@@ -45,20 +59,21 @@ func newAsyncDBTransactionWorker(conn *pgxpool.Pool) *AsyncDBTransactionWorker {
 		for task := range workerTaskCh {
 			thisTask := task
 			go func() {
-				tx, err := conn.BeginTx(thisTask.ctx, pgx.TxOptions{})
+				tx, err := conn.BeginTx(context.Background(), pgx.TxOptions{})
 				if err != nil {
-					log.Println(err)
+					workerLogger.Error(err)
 				}
 
 				_, err = tx.Exec(ctx, thisTask.query, thisTask.args...)
 				if err != nil {
-					log.Println(err)
+					workerLogger.Error(err)
 					_ = tx.Rollback(ctx)
 				}
 
 				if err := tx.Commit(ctx); err != nil {
-					log.Println(err)
+					workerLogger.Error(err)
 				}
+				worker.wg.Done()
 			}()
 		}
 	}()
@@ -73,13 +88,16 @@ type URLRepositoryPG struct {
 
 // NewURLRepositoryPG хранилище URL в СУБД Postgres, при создании происходит выполнения скрипта создания
 // необходимых таблиц, а так же создается асинхронный воркер, который может выполнять запросы к БД в асинхронном режиме
-func NewURLRepositoryPG(databaseDSN string) (URLRepository, error) {
+func NewURLRepositoryPG(databaseDSN string) (repository.URLRepository, error) {
 	conn, err := pgxpool.Connect(context.Background(), databaseDSN)
 	if err != nil {
+		dbLogger.Error(err)
 		return nil, fmt.Errorf(`repository initialization error: %w`, err)
 	}
-	err = setupTable(conn)
+	RunMigration(databaseDSN)
+	err = setupPreparedStatements(conn)
 	if err != nil {
+		dbLogger.Error(err)
 		return nil, fmt.Errorf(`repository initialization error: %w`, err)
 	}
 
@@ -88,18 +106,19 @@ func NewURLRepositoryPG(databaseDSN string) (URLRepository, error) {
 	return &URLRepositoryPG{DB: conn, AsyncWorker: asyncWorker}, nil
 }
 
-func (repo URLRepositoryPG) Save(shortenedInfo entity.ShortenedURLInfo) (string, error) {
-	shortenedInfo.ID = nextID()
+func (repo URLRepositoryPG) Save(ctx context.Context, shortenedInfo entity.ShortenedURLInfo) (string, error) {
+	shortenedInfo.ID = repository.NextID()
 
 	q := "INSERT INTO shortened_urls (id, original_url, owner, status) VALUES ($1, $2, $3, $4)"
 
-	_, err := repo.DB.Exec(context.Background(), q, shortenedInfo.GetID(), shortenedInfo.GetOriginalURL(), shortenedInfo.GetOwner(), shortenedInfo.GetStatus())
+	_, err := repo.DB.Exec(ctx, q, shortenedInfo.GetID(), shortenedInfo.GetOriginalURL(), shortenedInfo.GetOwner(), shortenedInfo.GetStatus())
 
 	var pgErr *pgconn.PgError
 	if err != nil {
+		dbLogger.Error(err)
 		if errors.As(err, &pgErr) {
 			if pgErr.ConstraintName == constraintOriginalURL {
-				return "", ErrorURLAlreadyStored
+				return "", repository.ErrorURLAlreadyStored
 			}
 		}
 		return "", err
@@ -107,8 +126,7 @@ func (repo URLRepositoryPG) Save(shortenedInfo entity.ShortenedURLInfo) (string,
 	return shortenedInfo.GetID(), nil
 }
 
-func (repo *URLRepositoryPG) SaveBatch(owner string, batch []dto.ShortenInBatchRequestItem) (map[string]string, error) {
-	ctx := context.Background()
+func (repo *URLRepositoryPG) SaveBatch(ctx context.Context, owner string, batch []dto.ShortenInBatchRequestItem) (map[string]string, error) {
 	tx, err := repo.DB.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return nil, err
@@ -121,49 +139,54 @@ func (repo *URLRepositoryPG) SaveBatch(owner string, batch []dto.ShortenInBatchR
 
 	var id string
 	for _, requestItem := range batch {
-		id = nextID()
+		id = repository.NextID()
 		_, err := tx.Exec(ctx, preparedSaveBatchStatement, id, requestItem.OriginalURL, owner, 0)
 		if err != nil {
+			dbLogger.Error(err)
 			return nil, err
 		}
 		response[requestItem.CorrelationID] = id
 	}
 
 	if err := tx.Commit(ctx); err != nil {
+		dbLogger.Error(err)
 		return nil, err
 	}
 	return response, nil
 }
 
-func (repo URLRepositoryPG) GetByID(id string) (entity.ShortenedURLInfo, error) {
+func (repo URLRepositoryPG) GetByID(ctx context.Context, id string) (entity.ShortenedURLInfo, error) {
 	q := "SELECT id, original_url, owner, status FROM shortened_urls WHERE id=$1"
 	var info entity.ShortenedURLInfo
-	err := repo.DB.QueryRow(context.Background(), q, id).Scan(&info.ID, &info.OriginalURL, &info.Owner, &info.Status)
+	err := repo.DB.QueryRow(ctx, q, id).Scan(&info.ID, &info.OriginalURL, &info.Owner, &info.Status)
 
 	if err != nil {
+		dbLogger.Error(err)
 		return entity.ShortenedURLInfo{}, err
 	}
 
 	return info, nil
 }
 
-func (repo URLRepositoryPG) GetByOriginalURL(url string) (entity.ShortenedURLInfo, error) {
+func (repo URLRepositoryPG) GetByOriginalURL(ctx context.Context, url string) (entity.ShortenedURLInfo, error) {
 	q := "SELECT id, original_url, owner, status FROM shortened_urls WHERE original_url=$1"
 	var info entity.ShortenedURLInfo
-	err := repo.DB.QueryRow(context.Background(), q, url).Scan(&info.ID, &info.OriginalURL, &info.Owner, &info.Status)
+	err := repo.DB.QueryRow(ctx, q, url).Scan(&info.ID, &info.OriginalURL, &info.Owner, &info.Status)
 
 	if err != nil {
+		dbLogger.Error(err)
 		return entity.ShortenedURLInfo{}, err
 	}
 
 	return info, nil
 }
 
-func (repo URLRepositoryPG) GetAllByOwner(owner string) ([]entity.ShortenedURLInfo, error) {
+func (repo URLRepositoryPG) GetAllByOwner(ctx context.Context, owner string) ([]entity.ShortenedURLInfo, error) {
 	q := "SELECT id, original_url, owner, status FROM shortened_urls WHERE owner=$1"
 
-	rows, err := repo.DB.Query(context.Background(), q, owner)
+	rows, err := repo.DB.Query(ctx, q, owner)
 	if err != nil {
+		dbLogger.Error(err)
 		return nil, err
 	}
 
@@ -181,8 +204,8 @@ func (repo URLRepositoryPG) GetAllByOwner(owner string) ([]entity.ShortenedURLIn
 	return infos, nil
 }
 
-func (repo *URLRepositoryPG) Ping() bool {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+func (repo *URLRepositoryPG) Ping(ctx context.Context) bool {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	if err := repo.DB.Ping(ctx); err != nil {
 		return false
@@ -191,9 +214,9 @@ func (repo *URLRepositoryPG) Ping() bool {
 	}
 }
 
-func (repo *URLRepositoryPG) DeleteURLsInBatch(owner string, ids []string) error {
+func (repo *URLRepositoryPG) DeleteURLsInBatch(_ context.Context, owner string, ids []string) error {
 	q := "UPDATE shortened_urls SET status = 1 WHERE owner = $1 AND id = ANY ($2)"
-	task := NewWorkerTask(context.Background(), q, owner, ids)
+	task := NewWorkerTask(q, owner, ids)
 	repo.AsyncWorker.executeTask(task)
 
 	return nil
@@ -201,49 +224,48 @@ func (repo *URLRepositoryPG) DeleteURLsInBatch(owner string, ids []string) error
 
 func (repo *URLRepositoryPG) Close() {
 	repo.DB.Close()
+	repo.AsyncWorker.close()
 }
 
-func setupTable(conn *pgxpool.Pool) error {
+func setupPreparedStatements(conn *pgxpool.Pool) error {
 	ctx := context.Background()
 	tx, err := conn.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
+		dbLogger.Error(err)
 		return err
 	}
 	defer func() {
 		_ = tx.Rollback(ctx)
 	}()
 
-	createTableQ := `create table if not exists shortened_urls
-	(
-		id           varchar(20)        not null,
-		original_url varchar            not null,
-		owner        uuid               not null,
-		status       smallint default 0 not null
-	)`
-	createIDIndexQ := "create unique index if not exists shortened_urls_id_uindex on shortened_urls (id)"
-	createOriginalURLIndexQ := "create unique index if not exists shortened_urls_original_url_uindex on shortened_urls (original_url)"
-	_, err = tx.Exec(ctx, createTableQ)
-	if err != nil {
-		return err
-	}
-	_, err = tx.Exec(ctx, createIDIndexQ)
-	if err != nil {
-		return err
-	}
-	_, err = tx.Exec(ctx, createOriginalURLIndexQ)
-	if err != nil {
-		return err
-	}
 	_, err = tx.Prepare(ctx, preparedSaveBatchStatement, "INSERT INTO shortened_urls (id, original_url, owner, status) VALUES ($1, $2, $3, $4)")
 	if err != nil {
+		dbLogger.Error(err)
 		return err
 	}
 	_, err = tx.Prepare(ctx, preparedMarkAsDeletedStatement, "UPDATE shortened_urls SET status = 1 WHERE id = $1")
 	if err != nil {
+		dbLogger.Error(err)
 		return err
 	}
 	if err := tx.Commit(ctx); err != nil {
+		dbLogger.Error(err)
 		return err
 	}
 	return nil
+}
+
+func waitWithTimeout(wg *sync.WaitGroup, t time.Duration) {
+	c := make(chan struct{})
+	go func() {
+		defer close(c)
+		wg.Wait()
+	}()
+
+	select {
+	case <-c:
+		workerLogger.Info("worker shutdown correctly")
+	case <-time.After(t):
+		workerLogger.Info("worker shutdown timeout exceeded")
+	}
 }
