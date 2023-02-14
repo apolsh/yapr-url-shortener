@@ -2,6 +2,7 @@ package http
 
 import (
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -45,7 +46,7 @@ func (s *RouterSuite) SetupTest() {
 	s.ctrl = ctrl
 	s.shorts = mocks.NewMockURLShortenerService(ctrl)
 
-	NewRouter(r, s.shorts, cryptoProvider)
+	NewRouter(r, s.shorts, cryptoProvider, &net.IPNet{IP: net.IPv4(0, 0, 0, 0)})
 	s.handler = r
 }
 
