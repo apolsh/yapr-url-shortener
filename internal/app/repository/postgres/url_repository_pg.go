@@ -33,27 +33,27 @@ type workerTask struct {
 	args  []interface{}
 }
 
-func NewWorkerTask(query string, args ...interface{}) *workerTask {
+func newWorkerTask(query string, args ...interface{}) *workerTask {
 	return &workerTask{query: query, args: args}
 }
 
-type AsyncDBTransactionWorker struct {
+type asyncDBTransactionWorker struct {
 	workerTaskCh chan workerTask
 	wg           sync.WaitGroup
 }
 
-func (w *AsyncDBTransactionWorker) executeTask(task *workerTask) {
+func (w *asyncDBTransactionWorker) executeTask(task *workerTask) {
 	w.wg.Add(1)
 	w.workerTaskCh <- *task
 }
 
-func (w *AsyncDBTransactionWorker) close() {
+func (w *asyncDBTransactionWorker) close() {
 	waitWithTimeout(&w.wg, 5*time.Second)
 }
 
-func newAsyncDBTransactionWorker(conn *pgxpool.Pool) *AsyncDBTransactionWorker {
+func newAsyncDBTransactionWorker(conn *pgxpool.Pool) *asyncDBTransactionWorker {
 	workerTaskCh := make(chan workerTask, runtime.NumCPU())
-	worker := &AsyncDBTransactionWorker{workerTaskCh: workerTaskCh}
+	worker := &asyncDBTransactionWorker{workerTaskCh: workerTaskCh}
 	ctx := context.Background()
 	go func() {
 		for task := range workerTaskCh {
@@ -81,9 +81,10 @@ func newAsyncDBTransactionWorker(conn *pgxpool.Pool) *AsyncDBTransactionWorker {
 	return worker
 }
 
+// URLRepositoryPG хранилище URL в postgres
 type URLRepositoryPG struct {
 	DB          *pgxpool.Pool
-	AsyncWorker *AsyncDBTransactionWorker
+	AsyncWorker *asyncDBTransactionWorker
 }
 
 // NewURLRepositoryPG хранилище URL в СУБД Postgres, при создании происходит выполнения скрипта создания
@@ -106,6 +107,7 @@ func NewURLRepositoryPG(databaseDSN string) (repository.URLRepository, error) {
 	return &URLRepositoryPG{DB: conn, AsyncWorker: asyncWorker}, nil
 }
 
+// Save сохранить новый URL
 func (repo URLRepositoryPG) Save(ctx context.Context, shortenedInfo entity.ShortenedURLInfo) (string, error) {
 	shortenedInfo.ID = repository.NextID()
 
@@ -126,6 +128,7 @@ func (repo URLRepositoryPG) Save(ctx context.Context, shortenedInfo entity.Short
 	return shortenedInfo.GetID(), nil
 }
 
+// SaveBatch сохранить сразу несколько новых URL
 func (repo *URLRepositoryPG) SaveBatch(ctx context.Context, owner string, batch []dto.ShortenInBatchRequestItem) (map[string]string, error) {
 	tx, err := repo.DB.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
@@ -155,6 +158,7 @@ func (repo *URLRepositoryPG) SaveBatch(ctx context.Context, owner string, batch 
 	return response, nil
 }
 
+// GetByID получить URL по ID
 func (repo URLRepositoryPG) GetByID(ctx context.Context, id string) (entity.ShortenedURLInfo, error) {
 	q := "SELECT id, original_url, owner, status FROM shortened_urls WHERE id=$1"
 	var info entity.ShortenedURLInfo
@@ -168,6 +172,7 @@ func (repo URLRepositoryPG) GetByID(ctx context.Context, id string) (entity.Shor
 	return info, nil
 }
 
+// GetByOriginalURL получить URL сущность по url
 func (repo URLRepositoryPG) GetByOriginalURL(ctx context.Context, url string) (entity.ShortenedURLInfo, error) {
 	q := "SELECT id, original_url, owner, status FROM shortened_urls WHERE original_url=$1"
 	var info entity.ShortenedURLInfo
@@ -181,6 +186,7 @@ func (repo URLRepositoryPG) GetByOriginalURL(ctx context.Context, url string) (e
 	return info, nil
 }
 
+// GetAllByOwner получить все URL по пользователю
 func (repo URLRepositoryPG) GetAllByOwner(ctx context.Context, owner string) ([]entity.ShortenedURLInfo, error) {
 	q := "SELECT id, original_url, owner, status FROM shortened_urls WHERE owner=$1"
 
@@ -204,6 +210,7 @@ func (repo URLRepositoryPG) GetAllByOwner(ctx context.Context, owner string) ([]
 	return infos, nil
 }
 
+// Ping проверка доступа до БД
 func (repo *URLRepositoryPG) Ping(ctx context.Context) bool {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
@@ -214,14 +221,16 @@ func (repo *URLRepositoryPG) Ping(ctx context.Context) bool {
 	}
 }
 
+// DeleteURLsInBatch удалить несколько URL за 1 запрос
 func (repo *URLRepositoryPG) DeleteURLsInBatch(_ context.Context, owner string, ids []string) error {
 	q := "UPDATE shortened_urls SET status = 1 WHERE owner = $1 AND id = ANY ($2)"
-	task := NewWorkerTask(q, owner, ids)
+	task := newWorkerTask(q, owner, ids)
 	repo.AsyncWorker.executeTask(task)
 
 	return nil
 }
 
+// GetAppStatistic получить статистику приложения
 func (repo *URLRepositoryPG) GetAppStatistic(ctx context.Context) (dto.AppStatisticItem, error) {
 	var res dto.AppStatisticItem
 
@@ -237,6 +246,7 @@ func (repo *URLRepositoryPG) GetAppStatistic(ctx context.Context) (dto.AppStatis
 	return res, nil
 }
 
+// Close для graceful завершения работы БД
 func (repo *URLRepositoryPG) Close() {
 	repo.DB.Close()
 	repo.AsyncWorker.close()

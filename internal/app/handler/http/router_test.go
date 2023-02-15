@@ -1,7 +1,7 @@
 package http
 
 import (
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -119,7 +119,7 @@ func (s *RouterSuite) TestGetShortenURLsByUserSomeFound() {
 	resp := httptest.NewRecorder()
 
 	s.handler.ServeHTTP(resp, req)
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 
 	assert.Equal(s.T(), 200, resp.Code)
 	s.JSONEq(`[{"short_url":"http://shorturl1.com/123","original_url":"http://longurl1.com"},{"short_url":"http://shorturl2.com/456","original_url":"http://longurl2.com"}]`, string(body))
@@ -174,7 +174,7 @@ func (s *RouterSuite) TestSaveShortenURLNewURLSaved() {
 	resp := httptest.NewRecorder()
 
 	s.handler.ServeHTTP(resp, req)
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 
 	assert.Equal(s.T(), 201, resp.Code)
 	assert.Equal(s.T(), shortURL1, string(body))
@@ -189,7 +189,7 @@ func (s *RouterSuite) TestSaveShortenURLAlreadySaved() {
 	resp := httptest.NewRecorder()
 
 	s.handler.ServeHTTP(resp, req)
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 
 	assert.Equal(s.T(), 409, resp.Code)
 	assert.Equal(s.T(), shortURL1, string(body))
@@ -229,7 +229,7 @@ func (s *RouterSuite) TestSaveShortenURLsInBatchWithSuccess() {
 
 	s.handler.ServeHTTP(resp, req)
 
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 
 	assert.Equal(s.T(), 201, resp.Code)
 	s.JSONEq(`[{"correlation_id":"1","short_url":"http://shorturl1.com/123"},{"correlation_id":"2","short_url":"http://shorturl2.com/456"}]`, string(body))
@@ -244,7 +244,7 @@ func (s *RouterSuite) TestSaveShortenURLJSONWithSuccess() {
 
 	s.handler.ServeHTTP(resp, req)
 
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 
 	assert.Equal(s.T(), 201, resp.Code)
 	s.JSONEq(`{"result":"http://shorturl1.com/123"}`, string(body))
@@ -271,7 +271,7 @@ func (s *RouterSuite) TestSaveShortenURLJSONErrorURLAlreadyStored() {
 
 	s.handler.ServeHTTP(resp, req)
 
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 
 	assert.Equal(s.T(), 409, resp.Code)
 	s.JSONEq(`{"result":"http://shorturl1.com/123"}`, string(body))

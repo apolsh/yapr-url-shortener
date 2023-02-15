@@ -19,38 +19,47 @@ type ShortenedURLInfo struct {
 	Status      int    `json:"status"`
 }
 
+// ToURLPair ShortenedURLInfo трансформирует в dto.URLPair
 func (s *ShortenedURLInfo) ToURLPair(hostURL string) dto.URLPair {
 	return dto.URLPair{OriginalURL: s.OriginalURL, ShortURL: fmt.Sprintf("%s/%s", hostURL, s.ID)}
 }
 
+// GetOwner геттер
 func (s *ShortenedURLInfo) GetOwner() string {
 	return s.Owner
 }
 
+// GetOriginalURL геттер
 func (s *ShortenedURLInfo) GetOriginalURL() string {
 	return s.OriginalURL
 }
 
+// GetID геттер
 func (s *ShortenedURLInfo) GetID() string {
 	return s.ID
 }
 
+// SetID сеттер
 func (s *ShortenedURLInfo) SetID(id string) {
 	s.ID = id
 }
 
+// GetStatus геттер
 func (s *ShortenedURLInfo) GetStatus() int {
 	return s.Status
 }
 
+// SetDeleted сеттер
 func (s *ShortenedURLInfo) SetDeleted() {
 	s.Status = Deleted
 }
 
+// IsDeleted геттер Deleted
 func (s *ShortenedURLInfo) IsDeleted() bool {
 	return s.Status == Deleted
 }
 
+// NewUnstoredShortenedURLInfo конструктор
 func NewUnstoredShortenedURLInfo(owner, originalURL string) *ShortenedURLInfo {
 	return &ShortenedURLInfo{ID: "", Owner: owner, OriginalURL: originalURL, Status: Active}
 }

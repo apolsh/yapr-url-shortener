@@ -12,6 +12,7 @@ type ShortenInBatchResponseItem struct {
 	ShortURL      string `json:"short_url"`
 }
 
+// AppStatisticItem статистические данные приложения
 type AppStatisticItem struct {
 	URLs  int `json:"urls"`
 	Users int `json:"users"`

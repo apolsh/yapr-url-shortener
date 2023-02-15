@@ -269,7 +269,7 @@ func (c *Controller) GetAppStats(w http.ResponseWriter, r *http.Request) {
 
 	ip := net.ParseIP(stringIP)
 	if ip == nil {
-		log.Error(errors.New(fmt.Sprintf("unable to parse %s to IP", stringIP)))
+		log.Error(fmt.Errorf("unable to parse %s to IP", stringIP))
 		http.Error(w, "", http.StatusForbidden)
 		return
 	}

@@ -6,6 +6,7 @@ import (
 	"golang.org/x/tools/go/analysis"
 )
 
+// Analyzer анализатор
 var Analyzer = &analysis.Analyzer{
 	Name: "exitmain",
 	Doc:  "check for using os.Exit in main function",
