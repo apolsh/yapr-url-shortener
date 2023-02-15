@@ -41,11 +41,13 @@ const (
 	realIPHeader = "X-Real-IP"
 )
 
+// Controller представляет собой http контроллер, умеющий обрабатывать запросы
 type Controller struct {
 	shortenService service.URLShortenerService
 	trustedSubnet  *net.IPNet
 }
 
+// NewRouter конструктор для Controller
 func NewRouter(r *chi.Mux, serviceImpl service.URLShortenerService, provider crypto.CryptographicProvider, trustedSubnet *net.IPNet) {
 	c := &Controller{shortenService: serviceImpl, trustedSubnet: trustedSubnet}
 
@@ -202,7 +204,7 @@ func (c *Controller) SaveShortenURLsInBatch(w http.ResponseWriter, r *http.Reque
 
 // SaveShortenURLJSON принимает запрос в виде JSON, сохраняет URL в хранилище
 func (c *Controller) SaveShortenURLJSON(w http.ResponseWriter, r *http.Request) {
-	var body SaveURLBody
+	var body saveURLBody
 	err := extractJSONBody(r, &body)
 	if err != nil {
 		log.Error(err)
@@ -235,7 +237,7 @@ func (c *Controller) SaveShortenURLJSON(w http.ResponseWriter, r *http.Request) 
 	}
 	setContentType(w, applicationJSON)
 	w.WriteHeader(statusCode)
-	if err := json.NewEncoder(w).Encode(&SaveURLResponse{Result: c.shortenService.GetShortenURLFromID(r.Context(), urlID)}); err != nil {
+	if err := json.NewEncoder(w).Encode(&saveURLResponse{Result: c.shortenService.GetShortenURLFromID(r.Context(), urlID)}); err != nil {
 		http.Error(w, encodeResponseBodyError, http.StatusInternalServerError)
 	}
 }
@@ -261,6 +263,7 @@ func (c *Controller) DeleteShortenURLsInBatch(w http.ResponseWriter, r *http.Req
 	w.WriteHeader(http.StatusAccepted)
 }
 
+// GetAppStats получить статистику приложения
 func (c *Controller) GetAppStats(w http.ResponseWriter, r *http.Request) {
 	stringIP := r.Header.Get(realIPHeader)
 
@@ -353,10 +356,10 @@ func extractTextBody(r *http.Request) (string, error) {
 	return string(body), nil
 }
 
-type SaveURLBody struct {
+type saveURLBody struct {
 	URL string `json:"url"`
 }
 
-type SaveURLResponse struct {
+type saveURLResponse struct {
 	Result string `json:"result"`
 }

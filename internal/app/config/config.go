@@ -29,11 +29,12 @@ type Config struct {
 	parsedTrustedSubnet *net.IPNet
 }
 
+// GetTrustedSubnet возвращает CIDR
 func (c *Config) GetTrustedSubnet() *net.IPNet {
 	return c.parsedTrustedSubnet
 }
 
-func (c *Config) SetupConfigs() {
+func (c *Config) setupConfigs() {
 	if c.TrustedSubnet == "" {
 		c.parsedTrustedSubnet = &defaultTrustedSubnet
 		return
@@ -112,7 +113,7 @@ func Load() Config {
 		mainConfig.populateEmptyFields(configFile)
 	}
 
-	mainConfig.SetupConfigs()
+	mainConfig.setupConfigs()
 
 	return mainConfig
 }
