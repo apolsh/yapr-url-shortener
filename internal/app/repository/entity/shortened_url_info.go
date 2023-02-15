@@ -7,10 +7,8 @@ import (
 )
 
 const (
-	// Active активный URL
-	Active = iota
-	// Deleted удаленный URL
-	Deleted
+	active = iota
+	deleted
 )
 
 // ShortenedURLInfo - представляет собой хранимый объект информации о сохраненном URL
@@ -53,15 +51,15 @@ func (s *ShortenedURLInfo) GetStatus() int {
 
 // SetDeleted сеттер
 func (s *ShortenedURLInfo) SetDeleted() {
-	s.Status = Deleted
+	s.Status = deleted
 }
 
-// IsDeleted геттер Deleted
+// IsDeleted возвращает статус URL == deleted
 func (s *ShortenedURLInfo) IsDeleted() bool {
-	return s.Status == Deleted
+	return s.Status == deleted
 }
 
 // NewUnstoredShortenedURLInfo конструктор
 func NewUnstoredShortenedURLInfo(owner, originalURL string) *ShortenedURLInfo {
-	return &ShortenedURLInfo{ID: "", Owner: owner, OriginalURL: originalURL, Status: Active}
+	return &ShortenedURLInfo{ID: "", Owner: owner, OriginalURL: originalURL, Status: active}
 }
