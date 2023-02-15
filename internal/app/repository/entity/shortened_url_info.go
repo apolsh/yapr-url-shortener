@@ -7,7 +7,9 @@ import (
 )
 
 const (
+	// Active активный URL
 	Active = iota
+	// Deleted удаленный URL
 	Deleted
 )
 

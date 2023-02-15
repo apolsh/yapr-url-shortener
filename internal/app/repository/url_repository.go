@@ -41,12 +41,11 @@ type URLRepository interface {
 	GetAppStatistic(ctx context.Context) (dto.AppStatisticItem, error)
 }
 
-var (
-	// ErrorItemNotFound искомый элемент не найден
-	ErrorItemNotFound = errors.New("item not found")
-	// ErrorURLAlreadyStored элемент уже сохранен в хранилище
-	ErrorURLAlreadyStored = errors.New("provided URL is already stored")
-)
+// ErrorItemNotFound искомый элемент не найден
+var ErrorItemNotFound = errors.New("item not found")
+
+// ErrorURLAlreadyStored элемент уже сохранен в хранилище
+var ErrorURLAlreadyStored = errors.New("provided URL is already stored")
 
 // NextID генератор уникальных идентификаторов
 func NextID() string {
