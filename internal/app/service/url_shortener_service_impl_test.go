@@ -45,6 +45,18 @@ func (s *URLShortenerServiceSuite) TestGetShortenURLFromID() {
 	assert.Equal(s.T(), hostAddress+"/"+"123", resp)
 }
 
+func BenchmarkGetShortenURLFromID(b *testing.B) {
+	ctrl := gomock.NewController(b)
+	repo := mocks.NewMockURLRepository(ctrl)
+	s := NewURLShortenerService(repo, hostAddress)
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		resp := s.GetShortenURLFromID(context.Background(), "123")
+
+		assert.Equal(b, hostAddress+"/"+"123", resp)
+	}
+}
+
 func (s *URLShortenerServiceSuite) TestGetURLByIDItemExist() {
 	s.repo.EXPECT().GetByID(context.Background(), "123").Return(entity.ShortenedURLInfo{OriginalURL: longURL1}, nil)
 	res, err := s.service.GetURLByID(context.Background(), "123")

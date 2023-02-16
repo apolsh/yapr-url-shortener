@@ -11,6 +11,7 @@ import (
 	"github.com/rs/xid"
 )
 
+// URLRepository хранилище URL
 type URLRepository interface {
 	// Save сохраняет URL в хранилище
 	Save(ctx context.Context, shortenedInfo entity.ShortenedURLInfo) (string, error)
@@ -35,12 +36,18 @@ type URLRepository interface {
 
 	// DeleteURLsInBatch помечает как удаленные URL, переданные в списке и принадлежащие указанному пользователю
 	DeleteURLsInBatch(ctx context.Context, owner string, ids []string) error
+
+	// GetAppStatistic получить статистику приложения
+	GetAppStatistic(ctx context.Context) (dto.AppStatisticItem, error)
 }
 
+// ErrorItemNotFound искомый элемент не найден
 var ErrorItemNotFound = errors.New("item not found")
 
+// ErrorURLAlreadyStored элемент уже сохранен в хранилище
 var ErrorURLAlreadyStored = errors.New("provided URL is already stored")
 
+// NextID генератор уникальных идентификаторов
 func NextID() string {
 	return xid.New().String()
 }

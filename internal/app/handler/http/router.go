@@ -4,7 +4,9 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -35,12 +37,19 @@ const (
 	applicationJSON = "application/json; charset=utf-8"
 )
 
+const (
+	realIPHeader = "X-Real-IP"
+)
+
+// Controller представляет собой http контроллер, умеющий обрабатывать запросы
 type Controller struct {
 	shortenService service.URLShortenerService
+	trustedSubnet  *net.IPNet
 }
 
-func NewRouter(r *chi.Mux, serviceImpl service.URLShortenerService, provider crypto.CryptographicProvider) {
-	c := &Controller{shortenService: serviceImpl}
+// NewRouter конструктор для Controller
+func NewRouter(r *chi.Mux, serviceImpl service.URLShortenerService, provider crypto.CryptographicProvider, trustedSubnet *net.IPNet) {
+	c := &Controller{shortenService: serviceImpl, trustedSubnet: trustedSubnet}
 
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
@@ -58,6 +67,7 @@ func NewRouter(r *chi.Mux, serviceImpl service.URLShortenerService, provider cry
 		})
 		r.With(customMiddleware.JSONFilterMiddleware).Group(func(r chi.Router) {
 			r.Route("/api", func(r chi.Router) {
+				r.Get("/internal/stats", c.GetAppStats)
 				r.Post("/shorten/batch", c.SaveShortenURLsInBatch)
 				r.Post("/shorten", c.SaveShortenURLJSON)
 				r.Delete("/user/urls", c.DeleteShortenURLsInBatch)
@@ -194,7 +204,7 @@ func (c *Controller) SaveShortenURLsInBatch(w http.ResponseWriter, r *http.Reque
 
 // SaveShortenURLJSON принимает запрос в виде JSON, сохраняет URL в хранилище
 func (c *Controller) SaveShortenURLJSON(w http.ResponseWriter, r *http.Request) {
-	var body SaveURLBody
+	var body saveURLBody
 	err := extractJSONBody(r, &body)
 	if err != nil {
 		log.Error(err)
@@ -227,7 +237,7 @@ func (c *Controller) SaveShortenURLJSON(w http.ResponseWriter, r *http.Request) 
 	}
 	setContentType(w, applicationJSON)
 	w.WriteHeader(statusCode)
-	if err := json.NewEncoder(w).Encode(&SaveURLResponse{Result: c.shortenService.GetShortenURLFromID(r.Context(), urlID)}); err != nil {
+	if err := json.NewEncoder(w).Encode(&saveURLResponse{Result: c.shortenService.GetShortenURLFromID(r.Context(), urlID)}); err != nil {
 		http.Error(w, encodeResponseBodyError, http.StatusInternalServerError)
 	}
 }
@@ -251,6 +261,35 @@ func (c *Controller) DeleteShortenURLsInBatch(w http.ResponseWriter, r *http.Req
 		return
 	}
 	w.WriteHeader(http.StatusAccepted)
+}
+
+// GetAppStats получить статистику приложения
+func (c *Controller) GetAppStats(w http.ResponseWriter, r *http.Request) {
+	stringIP := r.Header.Get(realIPHeader)
+
+	ip := net.ParseIP(stringIP)
+	if ip == nil {
+		log.Error(fmt.Errorf("unable to parse %s to IP", stringIP))
+		http.Error(w, "", http.StatusForbidden)
+		return
+	}
+
+	if !c.trustedSubnet.Contains(ip) {
+		http.Error(w, "", http.StatusForbidden)
+		return
+	}
+
+	statistic, err := c.shortenService.GetAppStatistic(r.Context())
+	if err != nil {
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
+
+	setContentType(w, applicationJSON)
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(statistic); err != nil {
+		http.Error(w, encodeResponseBodyError, http.StatusInternalServerError)
+	}
 }
 
 func setContentType(w http.ResponseWriter, contentType string) {
@@ -317,10 +356,10 @@ func extractTextBody(r *http.Request) (string, error) {
 	return string(body), nil
 }
 
-type SaveURLBody struct {
+type saveURLBody struct {
 	URL string `json:"url"`
 }
 
-type SaveURLResponse struct {
+type saveURLResponse struct {
 	Result string `json:"result"`
 }

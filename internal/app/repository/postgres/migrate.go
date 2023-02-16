@@ -22,6 +22,7 @@ const _defaultTimeout = 10 * time.Second
 //go:embed migrations/*.sql
 var fs embed.FS
 
+// RunMigration запускает миграцию схемы БД
 func RunMigration(databaseURL string) {
 
 	if !strings.Contains(databaseURL, "sslmode") {

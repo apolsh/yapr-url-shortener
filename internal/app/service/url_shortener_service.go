@@ -9,6 +9,7 @@ import (
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
 )
 
+// URLShortenerService сервис для работы с URL
 type URLShortenerService interface {
 	//AddNewURL сохраняет URL в хранилище
 	AddNewURL(ctx context.Context, shortenedURLInfo entity.ShortenedURLInfo) (string, error)
@@ -33,6 +34,10 @@ type URLShortenerService interface {
 
 	//GetShortenURLFromID создает укороченный URL основываясь на идентификаторе сохраненного URL
 	GetShortenURLFromID(ctx context.Context, id string) string
+
+	// GetAppStatistic получить статистику приложения
+	GetAppStatistic(ctx context.Context) (dto.AppStatisticItem, error)
 }
 
+// ErrorItemIsDeleted элемент помечен как удаленный
 var ErrorItemIsDeleted = errors.New("item is marked as deleted")

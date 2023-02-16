@@ -14,6 +14,7 @@ import (
 
 	"github.com/apolsh/yapr-url-shortener/internal/app/config"
 	"github.com/apolsh/yapr-url-shortener/internal/app/crypto"
+	"github.com/apolsh/yapr-url-shortener/internal/app/handler/grpc"
 	httpRouter "github.com/apolsh/yapr-url-shortener/internal/app/handler/http"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository"
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
@@ -65,16 +66,16 @@ func main() {
 	}
 
 	urlShortenerService := service.NewURLShortenerService(urlShortenerStorage, cfg.BaseURL)
-	httpRouter.NewRouter(router, urlShortenerService, authCryptoProvider)
+	httpRouter.NewRouter(router, urlShortenerService, authCryptoProvider, cfg.GetTrustedSubnet())
 
 	router.Mount("/debug", middleware.Profiler())
 
 	done := make(chan bool)
 	quit := make(chan os.Signal, 1)
 
-	signal.Notify(quit, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
+	signal.Notify(quit, syscall.SIGTERM, syscall.SIGQUIT)
 
-	server := &http.Server{
+	httpServer := &http.Server{
 		Addr:         cfg.ServerAddress,
 		Handler:      router,
 		ReadTimeout:  5 * time.Second,
@@ -84,14 +85,14 @@ func main() {
 
 	go func() {
 		<-quit
-		log.Info("server is shutting down...")
+		log.Info("httpServer is shutting down...")
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		server.SetKeepAlivesEnabled(false)
-		if err := server.Shutdown(ctx); err != nil {
-			log.Fatal(fmt.Errorf("could not gracefully shutdown the server: %v", err))
+		httpServer.SetKeepAlivesEnabled(false)
+		if err := httpServer.Shutdown(ctx); err != nil {
+			log.Fatal(fmt.Errorf("could not gracefully shutdown the httpServer: %v", err))
 		}
 		urlShortenerStorage.Close()
 		close(done)
@@ -99,6 +100,19 @@ func main() {
 
 	log.Info("Server is ready to handle requests at " + cfg.ServerAddress)
 
+	go func() {
+		startHTTPServer(cfg, httpServer)
+	}()
+
+	_, starter := grpc.StartGRPCServer(":8081", urlShortenerService, authCryptoProvider, cfg.GetTrustedSubnet())
+
+	go starter()
+
+	<-done
+	log.Info("Server stopped")
+}
+
+func startHTTPServer(cfg config.Config, server *http.Server) {
 	if cfg.HTTPSEnabled {
 		cer, err := tls.X509KeyPair(tlsCert, tlsKey)
 		if err != nil {
@@ -116,7 +130,4 @@ func main() {
 			log.Fatal(fmt.Errorf("could not listen on %s: %v", cfg.ServerAddress, err))
 		}
 	}
-
-	<-done
-	log.Info("Server stopped")
 }

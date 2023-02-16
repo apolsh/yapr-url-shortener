@@ -1,6 +1,7 @@
 package http
 
 import (
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -13,11 +14,12 @@ import (
 var (
 	s service.URLShortenerService
 	c crypto.CryptographicProvider
+	t *net.IPNet
 )
 
 func ExampleController_PingDB() {
 	r := chi.NewRouter()
-	NewRouter(r, s, c)
+	NewRouter(r, s, c, t)
 
 	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
 	resp := httptest.NewRecorder()
@@ -27,7 +29,7 @@ func ExampleController_PingDB() {
 
 func ExampleController_GetShortenURLByID() {
 	r := chi.NewRouter()
-	NewRouter(r, s, c)
+	NewRouter(r, s, c, t)
 
 	req := httptest.NewRequest(http.MethodGet, "/some_id", nil)
 	resp := httptest.NewRecorder()
@@ -37,7 +39,7 @@ func ExampleController_GetShortenURLByID() {
 
 func ExampleController_GetShortenURLsByUser() {
 	r := chi.NewRouter()
-	NewRouter(r, s, c)
+	NewRouter(r, s, c, t)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/user/urls", nil)
 	resp := httptest.NewRecorder()
@@ -47,7 +49,7 @@ func ExampleController_GetShortenURLsByUser() {
 
 func ExampleController_SaveShortenURL() {
 	r := chi.NewRouter()
-	NewRouter(r, s, c)
+	NewRouter(r, s, c, t)
 
 	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(longURL1))
 	req.Header.Set("Content-Type", "text/plain")
@@ -58,7 +60,7 @@ func ExampleController_SaveShortenURL() {
 
 func ExampleController_SaveShortenURLsInBatch() {
 	r := chi.NewRouter()
-	NewRouter(r, s, c)
+	NewRouter(r, s, c, t)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/shorten/batch", strings.NewReader(
 		`[
@@ -80,7 +82,7 @@ func ExampleController_SaveShortenURLsInBatch() {
 
 func ExampleController_SaveShortenURLJSON() {
 	r := chi.NewRouter()
-	NewRouter(r, s, c)
+	NewRouter(r, s, c, t)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/shorten", strings.NewReader(`{"url":"https://golangdocs.com/golang-read-json-file"}`))
 	req.Header.Set("Content-Type", "application/json")
@@ -91,7 +93,7 @@ func ExampleController_SaveShortenURLJSON() {
 
 func ExampleController_DeleteShortenURLsInBatch() {
 	r := chi.NewRouter()
-	NewRouter(r, s, c)
+	NewRouter(r, s, c, t)
 
 	req := httptest.NewRequest(http.MethodDelete, "/api/user/urls", strings.NewReader(`["123","456"]`))
 	req.Header.Set("Content-Type", "application/json")

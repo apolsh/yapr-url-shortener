@@ -11,8 +11,10 @@ import (
 
 const authCookieName = "sessionId"
 
+// ContextKey ключ для контекста
 type ContextKey string
 
+// OwnerID ключ для контекста отражающий пользователя
 var OwnerID ContextKey = "userId"
 
 func generateNewUserIDCookie(uuid []byte, cryptoProvider crypto.CryptographicProvider) *http.Cookie {

@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "github.com/apolsh/yapr-url-shortener/proto";
+
+import "google/protobuf/empty.proto";
+
+service URLShortener {
+  rpc PingDB(google.protobuf.Empty) returns(PingDBResponse);
+  rpc GetShortenURLByID(GetShortenURLByIDRequest) returns(GetShortenURLByIDResponse);
+  rpc GetShortenURLsByUser(google.protobuf.Empty) returns(GetShortenURLsByUserResponse);
+  rpc SaveShortenURL(SaveShortenURLRequest) returns(SaveShortenURLResponse);
+  rpc GetAppStats(google.protobuf.Empty) returns(GetAppStatsResponse);
+  rpc SaveShortenURLsInBatch(SaveShortenURLsInBatchRequest) returns(SaveShortenURLsInBatchResponse);
+  rpc DeleteShortenURLsInBatch(DeleteShortenURLsInBatchRequest) returns(google.protobuf.Empty);
+}
+
+message PingDBResponse {
+  bool isAlive = 1;
+}
+
+message GetShortenURLByIDRequest {
+  string urlID = 1;
+}
+
+message GetShortenURLByIDResponse {
+  string originalURL = 1;
+}
+
+message URLPair {
+  string shortURL = 1;
+  string originalURL = 2;
+}
+
+message GetShortenURLsByUserResponse {
+  repeated URLPair urlPairs = 1;
+}
+
+message SaveShortenURLRequest {
+  string originalURL = 1;
+}
+
+message SaveShortenURLResponse {
+  string shortenedURL = 1;
+}
+
+message ShortenInBatchRequestItem {
+  string correlationID = 1;
+  string originalURL = 2;
+}
+
+message ShortenInBatchResponseItem {
+  string correlationID = 1;
+  string shortURL = 2;
+}
+
+message SaveShortenURLsInBatchRequest {
+  repeated ShortenInBatchRequestItem items = 1;
+}
+
+message SaveShortenURLsInBatchResponse {
+  repeated ShortenInBatchResponseItem items = 1;
+}
+
+message DeleteShortenURLsInBatchRequest {
+  repeated string items = 1;
+}
+
+message GetAppStatsResponse {
+    int64 URLs = 1;
+    int64 Users = 2;
+}

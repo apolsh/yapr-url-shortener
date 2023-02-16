@@ -9,6 +9,7 @@ var allowedTypes = []string{"application/json", "application/x-gzip"}
 
 const invalidContentTypeError = "invalid content type"
 
+// JSONFilterMiddleware фильтр, пропускает только JSON запросы
 func JSONFilterMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		actualContentType := r.Header.Get("Content-Type")
