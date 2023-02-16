@@ -31,31 +31,6 @@ type GRPCServerSuite struct {
 	client pb.URLShortenerClient
 }
 
-//func clientInterceptor(ctx context.Context, method string, req interface{},
-//	reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker,
-//	opts ...grpc.CallOption) error {
-//	// выполняем действия перед вызовом метода
-//	start := time.Now()
-//
-//	// вызываем RPC-метод
-//	err := invoker(ctx, method, req, reply, cc, opts...)
-//
-//	for _, opt := range opts {
-//		if option, ok := opt.(grpc.HeaderCallOption); ok {
-//			sID := option.HeaderAddr.Get(sessionID)
-//		}
-//		fmt.Println(opt)
-//	}
-//
-//	// выполняем действия после вызова метода
-//	if err != nil {
-//		log.Info("[ERROR] %s,%v", method, err)
-//	} else {
-//		log.Info("[INFO] %s,%v", method, time.Since(start))
-//	}
-//	return err
-//}
-
 func TestGRPCServer(t *testing.T) {
 	suite.Run(t, new(GRPCServerSuite))
 }
@@ -72,16 +47,20 @@ func (s *GRPCServerSuite) SetupTest() {
 	ctrl := gomock.NewController(s.T())
 	s.ctrl = ctrl
 	s.shorts = mocks.NewMockURLShortenerService(ctrl)
-	go func() {
-		s.server, _ = StartGRPCServer(":3333", s.shorts, cryptoProvider, &net.IPNet{IP: net.IPv4(0, 0, 0, 0)})
-	}()
+	server, starter := StartGRPCServer(":3333", s.shorts, cryptoProvider, &net.IPNet{IP: net.IPv4(0, 0, 0, 0)})
+	s.server = server
+	go starter()
 	conn, err := grpc.Dial(":3333", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatal(err)
 	}
-	// получаем переменную интерфейсного типа UsersClient,
-	// через которую будем отправлять сообщения
 	s.client = pb.NewURLShortenerClient(conn)
+}
+
+func (s *GRPCServerSuite) TearDownTest() {
+	if s.server != nil {
+		s.server.Stop()
+	}
 }
 
 func (s *GRPCServerSuite) TestPingDB() {

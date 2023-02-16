@@ -34,7 +34,7 @@ type URLShortenerServer struct {
 	trustedSubnet  *net.IPNet
 }
 
-func StartGRPCServer(addr string, shortenService service.URLShortenerService, cryptoProvider crypto.CryptographicProvider, trustedSubnet *net.IPNet) (*grpc.Server, error) {
+func StartGRPCServer(addr string, shortenService service.URLShortenerService, cryptoProvider crypto.CryptographicProvider, trustedSubnet *net.IPNet) (*grpc.Server, func()) {
 	listen, err := net.Listen("tcp", addr)
 	if err != nil {
 		log.Fatal(err)
@@ -44,7 +44,12 @@ func StartGRPCServer(addr string, shortenService service.URLShortenerService, cr
 
 	pb.RegisterURLShortenerServer(s, &URLShortenerServer{shortenService: shortenService, trustedSubnet: trustedSubnet})
 
-	return s, s.Serve(listen)
+	return s, func() {
+		err = s.Serve(listen)
+		if err != nil {
+			log.Error(err)
+		}
+	}
 }
 
 func (u *URLShortenerServer) PingDB(ctx context.Context, _ *emptypb.Empty) (*pb.PingDBResponse, error) {

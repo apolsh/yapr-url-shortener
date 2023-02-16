@@ -104,13 +104,9 @@ func main() {
 		startHTTPServer(cfg, httpServer)
 	}()
 
-	go func() {
-		_, err := grpc.StartGRPCServer(":8081", urlShortenerService, authCryptoProvider, cfg.GetTrustedSubnet())
-		if err != nil {
-			log.Error(err)
-			return
-		}
-	}()
+	_, starter := grpc.StartGRPCServer(":8081", urlShortenerService, authCryptoProvider, cfg.GetTrustedSubnet())
+
+	go starter()
 
 	<-done
 	log.Info("Server stopped")
