@@ -29,7 +29,6 @@ type RouterSuite struct {
 
 func TestRouterSuite(t *testing.T) {
 	suite.Run(t, new(RouterSuite))
-
 }
 
 var (
