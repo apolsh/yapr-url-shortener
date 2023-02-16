@@ -22,19 +22,20 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-const OwnerID string = "userId"
+const ownerID string = "userId"
 const sessionID string = "sessionId"
-const RealIPHeader string = "X-Real-IP"
+const realIPHeader string = "X-Real-IP"
 
 var log = logger.LoggerOfComponent("grpc-router")
 
-type URLShortenerServer struct {
+type urlShortenerServer struct {
 	pb.UnimplementedURLShortenerServer
 	shortenService service.URLShortenerService
 	trustedSubnet  *net.IPNet
 }
 
-func StartGRPCServer(addr string, shortenService service.URLShortenerService, cryptoProvider crypto.CryptographicProvider, trustedSubnet *net.IPNet) (*grpc.Server, func()) {
+// GetServerStarter возвращает grpc server и функцию, стартующую сервер
+func GetServerStarter(addr string, shortenService service.URLShortenerService, cryptoProvider crypto.CryptographicProvider, trustedSubnet *net.IPNet) (*grpc.Server, func()) {
 	listen, err := net.Listen("tcp", addr)
 	if err != nil {
 		log.Fatal(err)
@@ -42,7 +43,7 @@ func StartGRPCServer(addr string, shortenService service.URLShortenerService, cr
 
 	s := grpc.NewServer(grpc.UnaryInterceptor(newAuthInterceptor(cryptoProvider)))
 
-	pb.RegisterURLShortenerServer(s, &URLShortenerServer{shortenService: shortenService, trustedSubnet: trustedSubnet})
+	pb.RegisterURLShortenerServer(s, &urlShortenerServer{shortenService: shortenService, trustedSubnet: trustedSubnet})
 
 	return s, func() {
 		err = s.Serve(listen)
@@ -52,14 +53,16 @@ func StartGRPCServer(addr string, shortenService service.URLShortenerService, cr
 	}
 }
 
-func (u *URLShortenerServer) PingDB(ctx context.Context, _ *emptypb.Empty) (*pb.PingDBResponse, error) {
+// PingDB проверяет работу хранилища URL
+func (u *urlShortenerServer) PingDB(ctx context.Context, _ *emptypb.Empty) (*pb.PingDBResponse, error) {
 	ok := u.shortenService.PingDB(ctx)
 	response := &pb.PingDBResponse{IsAlive: ok}
 
 	return response, nil
 }
 
-func (u *URLShortenerServer) GetShortenURLByID(ctx context.Context, request *pb.GetShortenURLByIDRequest) (*pb.GetShortenURLByIDResponse, error) {
+// GetShortenURLByID производит редирект на сохраненный ранее в хранилище URL
+func (u *urlShortenerServer) GetShortenURLByID(ctx context.Context, request *pb.GetShortenURLByIDRequest) (*pb.GetShortenURLByIDResponse, error) {
 	url, err := u.shortenService.GetURLByID(ctx, request.UrlID)
 	if err != nil {
 		log.Error(err)
@@ -76,8 +79,9 @@ func (u *URLShortenerServer) GetShortenURLByID(ctx context.Context, request *pb.
 	return response, nil
 }
 
-func (u *URLShortenerServer) GetShortenURLsByUser(ctx context.Context, _ *emptypb.Empty) (*pb.GetShortenURLsByUserResponse, error) {
-	owner := extractSingleValueFromContext(ctx, OwnerID)
+// GetShortenURLsByUser возвращает список пар (короткий + длинный) URL пользователя
+func (u *urlShortenerServer) GetShortenURLsByUser(ctx context.Context, _ *emptypb.Empty) (*pb.GetShortenURLsByUserResponse, error) {
+	owner := extractSingleValueFromContext(ctx, ownerID)
 
 	urlPairs, err := u.shortenService.GetURLsByOwnerID(ctx, owner)
 	if err != nil {
@@ -92,8 +96,9 @@ func (u *URLShortenerServer) GetShortenURLsByUser(ctx context.Context, _ *emptyp
 	return response, nil
 }
 
-func (u *URLShortenerServer) SaveShortenURL(ctx context.Context, request *pb.SaveShortenURLRequest) (*pb.SaveShortenURLResponse, error) {
-	owner := extractSingleValueFromContext(ctx, OwnerID)
+// SaveShortenURL принимает запрос в виде простого текста, сохраняет URL в хранилище
+func (u *urlShortenerServer) SaveShortenURL(ctx context.Context, request *pb.SaveShortenURLRequest) (*pb.SaveShortenURLResponse, error) {
+	owner := extractSingleValueFromContext(ctx, ownerID)
 
 	urlID, err := u.shortenService.AddNewURL(ctx, *entity.NewUnstoredShortenedURLInfo(owner, request.OriginalURL))
 	if err != nil {
@@ -113,8 +118,9 @@ func (u *URLShortenerServer) SaveShortenURL(ctx context.Context, request *pb.Sav
 	return response, nil
 }
 
-func (u *URLShortenerServer) GetAppStats(ctx context.Context, _ *emptypb.Empty) (*pb.GetAppStatsResponse, error) {
-	stringIP := extractSingleValueFromContext(ctx, RealIPHeader)
+// GetAppStats получить статистику приложения
+func (u *urlShortenerServer) GetAppStats(ctx context.Context, _ *emptypb.Empty) (*pb.GetAppStatsResponse, error) {
+	stringIP := extractSingleValueFromContext(ctx, realIPHeader)
 
 	ip := net.ParseIP(stringIP)
 	if ip == nil {
@@ -135,8 +141,9 @@ func (u *URLShortenerServer) GetAppStats(ctx context.Context, _ *emptypb.Empty) 
 	return response, nil
 }
 
-func (u *URLShortenerServer) SaveShortenURLsInBatch(ctx context.Context, request *pb.SaveShortenURLsInBatchRequest) (*pb.SaveShortenURLsInBatchResponse, error) {
-	owner := extractSingleValueFromContext(ctx, OwnerID)
+// SaveShortenURLsInBatch сохраняет сразу несколько URL в хранилище за один запрос
+func (u *urlShortenerServer) SaveShortenURLsInBatch(ctx context.Context, request *pb.SaveShortenURLsInBatchRequest) (*pb.SaveShortenURLsInBatchResponse, error) {
+	owner := extractSingleValueFromContext(ctx, ownerID)
 
 	batch := make([]dto.ShortenInBatchRequestItem, 0, len(request.Items))
 
@@ -160,8 +167,9 @@ func (u *URLShortenerServer) SaveShortenURLsInBatch(ctx context.Context, request
 	return response, nil
 }
 
-func (u *URLShortenerServer) DeleteShortenURLsInBatch(ctx context.Context, request *pb.DeleteShortenURLsInBatchRequest) (*emptypb.Empty, error) {
-	owner := extractSingleValueFromContext(ctx, OwnerID)
+// DeleteShortenURLsInBatch помечает URL в хранилище как удаленный
+func (u *urlShortenerServer) DeleteShortenURLsInBatch(ctx context.Context, request *pb.DeleteShortenURLsInBatchRequest) (*emptypb.Empty, error) {
+	owner := extractSingleValueFromContext(ctx, ownerID)
 
 	err := u.shortenService.DeleteURLsInBatch(ctx, owner, request.Items)
 	if err != nil {
@@ -219,7 +227,7 @@ func newAuthInterceptor(cryptoProvider crypto.CryptographicProvider) func(ctx co
 				fillWithNewUserAndToken(&ctx, md, cryptoProvider)
 				return handler(ctx, req)
 			}
-			md.Append(OwnerID, owner)
+			md.Append(ownerID, owner)
 			header := metadata.Pairs(sessionID, token)
 			err = grpc.SendHeader(ctx, header)
 			if err != nil {
@@ -235,7 +243,7 @@ func fillWithNewUserAndToken(ctx *context.Context, md metadata.MD, cryptoProvide
 	userUUID := uuid.New()
 	token := cryptoProvider.Encrypt(userUUID[:])
 	userID := userUUID.String()
-	md.Append(OwnerID, userID)
+	md.Append(ownerID, userID)
 
 	header := metadata.Pairs(sessionID, token)
 	err := grpc.SendHeader(*ctx, header)

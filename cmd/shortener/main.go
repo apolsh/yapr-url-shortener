@@ -104,7 +104,7 @@ func main() {
 		startHTTPServer(cfg, httpServer)
 	}()
 
-	_, starter := grpc.StartGRPCServer(":8081", urlShortenerService, authCryptoProvider, cfg.GetTrustedSubnet())
+	_, starter := grpc.GetServerStarter(":8081", urlShortenerService, authCryptoProvider, cfg.GetTrustedSubnet())
 
 	go starter()
 

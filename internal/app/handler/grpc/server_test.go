@@ -47,7 +47,7 @@ func (s *GRPCServerSuite) SetupTest() {
 	ctrl := gomock.NewController(s.T())
 	s.ctrl = ctrl
 	s.shorts = mocks.NewMockURLShortenerService(ctrl)
-	server, starter := StartGRPCServer(":3333", s.shorts, cryptoProvider, &net.IPNet{IP: net.IPv4(0, 0, 0, 0)})
+	server, starter := GetServerStarter(":3333", s.shorts, cryptoProvider, &net.IPNet{IP: net.IPv4(0, 0, 0, 0)})
 	s.server = server
 	go starter()
 	conn, err := grpc.Dial(":3333", grpc.WithTransportCredentials(insecure.NewCredentials()))
