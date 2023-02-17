@@ -22,13 +22,21 @@ const _ = grpc.SupportPackageIsVersion7
 // URLShortenerClient is the client API for URLShortener service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+// URLShortenerClient
 type URLShortenerClient interface {
+	// PingDB
 	PingDB(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*PingDBResponse, error)
+	// GetShortenURLByID
 	GetShortenURLByID(ctx context.Context, in *GetShortenURLByIDRequest, opts ...grpc.CallOption) (*GetShortenURLByIDResponse, error)
+	// GetShortenURLsByUser
 	GetShortenURLsByUser(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetShortenURLsByUserResponse, error)
+	// SaveShortenURL
 	SaveShortenURL(ctx context.Context, in *SaveShortenURLRequest, opts ...grpc.CallOption) (*SaveShortenURLResponse, error)
+	// GetAppStats
 	GetAppStats(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetAppStatsResponse, error)
+	// SaveShortenURLsInBatch
 	SaveShortenURLsInBatch(ctx context.Context, in *SaveShortenURLsInBatchRequest, opts ...grpc.CallOption) (*SaveShortenURLsInBatchResponse, error)
+	// DeleteShortenURLsInBatch
 	DeleteShortenURLsInBatch(ctx context.Context, in *DeleteShortenURLsInBatchRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
@@ -36,10 +44,12 @@ type uRLShortenerClient struct {
 	cc grpc.ClientConnInterface
 }
 
+// NewURLShortenerClient
 func NewURLShortenerClient(cc grpc.ClientConnInterface) URLShortenerClient {
 	return &uRLShortenerClient{cc}
 }
 
+// PingDB
 func (c *uRLShortenerClient) PingDB(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*PingDBResponse, error) {
 	out := new(PingDBResponse)
 	err := c.cc.Invoke(ctx, "/proto.URLShortener/PingDB", in, out, opts...)
@@ -49,6 +59,7 @@ func (c *uRLShortenerClient) PingDB(ctx context.Context, in *emptypb.Empty, opts
 	return out, nil
 }
 
+// GetShortenURLByID
 func (c *uRLShortenerClient) GetShortenURLByID(ctx context.Context, in *GetShortenURLByIDRequest, opts ...grpc.CallOption) (*GetShortenURLByIDResponse, error) {
 	out := new(GetShortenURLByIDResponse)
 	err := c.cc.Invoke(ctx, "/proto.URLShortener/GetShortenURLByID", in, out, opts...)
@@ -58,6 +69,7 @@ func (c *uRLShortenerClient) GetShortenURLByID(ctx context.Context, in *GetShort
 	return out, nil
 }
 
+// GetShortenURLsByUser
 func (c *uRLShortenerClient) GetShortenURLsByUser(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetShortenURLsByUserResponse, error) {
 	out := new(GetShortenURLsByUserResponse)
 	err := c.cc.Invoke(ctx, "/proto.URLShortener/GetShortenURLsByUser", in, out, opts...)
@@ -67,6 +79,7 @@ func (c *uRLShortenerClient) GetShortenURLsByUser(ctx context.Context, in *empty
 	return out, nil
 }
 
+// SaveShortenURL
 func (c *uRLShortenerClient) SaveShortenURL(ctx context.Context, in *SaveShortenURLRequest, opts ...grpc.CallOption) (*SaveShortenURLResponse, error) {
 	out := new(SaveShortenURLResponse)
 	err := c.cc.Invoke(ctx, "/proto.URLShortener/SaveShortenURL", in, out, opts...)
@@ -76,6 +89,7 @@ func (c *uRLShortenerClient) SaveShortenURL(ctx context.Context, in *SaveShorten
 	return out, nil
 }
 
+// GetAppStats
 func (c *uRLShortenerClient) GetAppStats(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetAppStatsResponse, error) {
 	out := new(GetAppStatsResponse)
 	err := c.cc.Invoke(ctx, "/proto.URLShortener/GetAppStats", in, out, opts...)
@@ -85,6 +99,7 @@ func (c *uRLShortenerClient) GetAppStats(ctx context.Context, in *emptypb.Empty,
 	return out, nil
 }
 
+// SaveShortenURLsInBatch
 func (c *uRLShortenerClient) SaveShortenURLsInBatch(ctx context.Context, in *SaveShortenURLsInBatchRequest, opts ...grpc.CallOption) (*SaveShortenURLsInBatchResponse, error) {
 	out := new(SaveShortenURLsInBatchResponse)
 	err := c.cc.Invoke(ctx, "/proto.URLShortener/SaveShortenURLsInBatch", in, out, opts...)
@@ -94,6 +109,7 @@ func (c *uRLShortenerClient) SaveShortenURLsInBatch(ctx context.Context, in *Sav
 	return out, nil
 }
 
+// DeleteShortenURLsInBatch
 func (c *uRLShortenerClient) DeleteShortenURLsInBatch(ctx context.Context, in *DeleteShortenURLsInBatchRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, "/proto.URLShortener/DeleteShortenURLsInBatch", in, out, opts...)
@@ -106,13 +122,21 @@ func (c *uRLShortenerClient) DeleteShortenURLsInBatch(ctx context.Context, in *D
 // URLShortenerServer is the server API for URLShortener service.
 // All implementations must embed UnimplementedURLShortenerServer
 // for forward compatibility
+// URLShortenerServer
 type URLShortenerServer interface {
+	// PingDB
 	PingDB(context.Context, *emptypb.Empty) (*PingDBResponse, error)
+	// GetShortenURLByID
 	GetShortenURLByID(context.Context, *GetShortenURLByIDRequest) (*GetShortenURLByIDResponse, error)
+	// GetShortenURLsByUser
 	GetShortenURLsByUser(context.Context, *emptypb.Empty) (*GetShortenURLsByUserResponse, error)
+	// SaveShortenURL
 	SaveShortenURL(context.Context, *SaveShortenURLRequest) (*SaveShortenURLResponse, error)
+	// GetAppStats
 	GetAppStats(context.Context, *emptypb.Empty) (*GetAppStatsResponse, error)
+	// SaveShortenURLsInBatch
 	SaveShortenURLsInBatch(context.Context, *SaveShortenURLsInBatchRequest) (*SaveShortenURLsInBatchResponse, error)
+	// DeleteShortenURLsInBatch
 	DeleteShortenURLsInBatch(context.Context, *DeleteShortenURLsInBatchRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedURLShortenerServer()
 }
@@ -121,24 +145,37 @@ type URLShortenerServer interface {
 type UnimplementedURLShortenerServer struct {
 }
 
+// PingDB
 func (UnimplementedURLShortenerServer) PingDB(context.Context, *emptypb.Empty) (*PingDBResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PingDB not implemented")
 }
+
+// GetShortenURLByID
 func (UnimplementedURLShortenerServer) GetShortenURLByID(context.Context, *GetShortenURLByIDRequest) (*GetShortenURLByIDResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetShortenURLByID not implemented")
 }
+
+// GetShortenURLsByUser
 func (UnimplementedURLShortenerServer) GetShortenURLsByUser(context.Context, *emptypb.Empty) (*GetShortenURLsByUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetShortenURLsByUser not implemented")
 }
+
+// SaveShortenURL
 func (UnimplementedURLShortenerServer) SaveShortenURL(context.Context, *SaveShortenURLRequest) (*SaveShortenURLResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SaveShortenURL not implemented")
 }
+
+// GetAppStats
 func (UnimplementedURLShortenerServer) GetAppStats(context.Context, *emptypb.Empty) (*GetAppStatsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAppStats not implemented")
 }
+
+// SaveShortenURLsInBatch
 func (UnimplementedURLShortenerServer) SaveShortenURLsInBatch(context.Context, *SaveShortenURLsInBatchRequest) (*SaveShortenURLsInBatchResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SaveShortenURLsInBatch not implemented")
 }
+
+// DeleteShortenURLsInBatch
 func (UnimplementedURLShortenerServer) DeleteShortenURLsInBatch(context.Context, *DeleteShortenURLsInBatchRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteShortenURLsInBatch not implemented")
 }
@@ -151,6 +188,7 @@ type UnsafeURLShortenerServer interface {
 	mustEmbedUnimplementedURLShortenerServer()
 }
 
+// RegisterURLShortenerServer
 func RegisterURLShortenerServer(s grpc.ServiceRegistrar, srv URLShortenerServer) {
 	s.RegisterService(&URLShortener_ServiceDesc, srv)
 }
