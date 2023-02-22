@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"net"
 	"os"
 
 	"github.com/apolsh/yapr-url-shortener/internal/logger"
@@ -12,16 +13,39 @@ import (
 
 var log = logger.LoggerOfComponent("config")
 
+var defaultTrustedSubnet = net.IPNet{IP: net.IPv4(0, 0, 0, 0)}
+
 // Config конфигурационные данные приложения
 type Config struct {
-	ServerAddress   string `env:"SERVER_ADDRESS" envDefault:"localhost:8080" json:"server_address"`
-	BaseURL         string `env:"BASE_URL" envDefault:"http://localhost:8080" json:"base_url"`
-	FileStoragePath string `env:"FILE_STORAGE_PATH" json:"file_storage_path"`
-	AuthSecretKey   string `env:"AUTH_SECRET_KEY" envDefault:"very_secret_key"`
-	DatabaseDSN     string `env:"DATABASE_DSN" json:"database_dsn"`
-	HTTPSEnabled    bool   `env:"ENABLE_HTTPS" json:"enable_https"`
-	ConfigFilePath  string `env:"CONFIG"`
-	LogLevel        string `env:"LOG_LEVEL" envDefault:"info"`
+	ServerAddress       string `env:"SERVER_ADDRESS" envDefault:"localhost:8080" json:"server_address"`
+	BaseURL             string `env:"BASE_URL" envDefault:"http://localhost:8080" json:"base_url"`
+	FileStoragePath     string `env:"FILE_STORAGE_PATH" json:"file_storage_path"`
+	AuthSecretKey       string `env:"AUTH_SECRET_KEY" envDefault:"very_secret_key"`
+	DatabaseDSN         string `env:"DATABASE_DSN" json:"database_dsn"`
+	HTTPSEnabled        bool   `env:"ENABLE_HTTPS" json:"enable_https"`
+	ConfigFilePath      string `env:"CONFIG"`
+	LogLevel            string `env:"LOG_LEVEL" envDefault:"info"`
+	TrustedSubnet       string `env:"TRUSTED_SUBNET"`
+	GRPCServerAddress   string `env:"GRPC_SERVER_ADDRESS" envDefault:"localhost:8081" json:"grpc_server_address"`
+	parsedTrustedSubnet *net.IPNet
+}
+
+// GetTrustedSubnet возвращает CIDR
+func (c *Config) GetTrustedSubnet() *net.IPNet {
+	return c.parsedTrustedSubnet
+}
+
+func (c *Config) setupConfigs() {
+	if c.TrustedSubnet == "" {
+		c.parsedTrustedSubnet = &defaultTrustedSubnet
+		return
+	}
+	_, ipNet, err := net.ParseCIDR(c.TrustedSubnet)
+	if err != nil {
+		panic(fmt.Errorf("failed to parse trusted subnet %s", c.TrustedSubnet))
+	}
+
+	c.parsedTrustedSubnet = ipNet
 }
 
 func (c *Config) populateEmptyFields(another Config) {
@@ -46,6 +70,12 @@ func (c *Config) populateEmptyFields(another Config) {
 	if !c.HTTPSEnabled && another.HTTPSEnabled {
 		c.HTTPSEnabled = another.HTTPSEnabled
 	}
+	if c.TrustedSubnet == "" && another.TrustedSubnet != "" {
+		c.TrustedSubnet = another.TrustedSubnet
+	}
+	if c.GRPCServerAddress == "" && another.GRPCServerAddress != "" {
+		c.GRPCServerAddress = another.GRPCServerAddress
+	}
 }
 
 // Load считывает переменные окружения и флаги, приоритет отдается флагам
@@ -54,6 +84,7 @@ func Load() Config {
 	var mainConfig Config
 
 	flag.StringVar(&mainConfig.ServerAddress, "a", "", "HTTP server start address")
+	flag.StringVar(&mainConfig.GRPCServerAddress, "g", "", "GRPC server start address")
 	flag.StringVar(&mainConfig.BaseURL, "b", "", "base address of the resulting shortened URL")
 	flag.StringVar(&mainConfig.FileStoragePath, "f", "", "path to file with abbreviated URLs")
 	flag.StringVar(&mainConfig.DatabaseDSN, "d", "", "database DSN")
@@ -62,6 +93,7 @@ func Load() Config {
 	if mainConfig.ConfigFilePath == "" {
 		flag.StringVar(&mainConfig.ConfigFilePath, "config", "", "config file path")
 	}
+	flag.StringVar(&mainConfig.ConfigFilePath, "t", "", "trusted subnet")
 
 	flag.Parse()
 
@@ -85,6 +117,8 @@ func Load() Config {
 		}
 		mainConfig.populateEmptyFields(configFile)
 	}
+
+	mainConfig.setupConfigs()
 
 	return mainConfig
 }

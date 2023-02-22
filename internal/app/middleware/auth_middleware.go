@@ -11,8 +11,10 @@ import (
 
 const authCookieName = "sessionId"
 
+// ContextKey ключ для контекста.
 type ContextKey string
 
+// OwnerID ключ для контекста отражающий пользователя.
 var OwnerID ContextKey = "userId"
 
 func generateNewUserIDCookie(uuid []byte, cryptoProvider crypto.CryptographicProvider) *http.Cookie {
@@ -23,7 +25,7 @@ func generateNewUserIDCookie(uuid []byte, cryptoProvider crypto.CryptographicPro
 
 // AuthMiddleware middleware, который присваивает пользователям идентификаторы и
 // идентифицирует пользователя по cookie sessionId, если у пользователя
-// отсутствует этот cookie, то присваивает новый идентификатор и добавляет SetCookie заголовок с sessionId
+// отсутствует этот cookie, то присваивает новый идентификатор и добавляет SetCookie заголовок с sessionId.
 func AuthMiddleware(cryptoProvider crypto.CryptographicProvider) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		handlerFunction := func(w http.ResponseWriter, r *http.Request) {

@@ -77,6 +77,21 @@ func (mr *MockURLRepositoryMockRecorder) GetAllByOwner(arg0, arg1 interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllByOwner", reflect.TypeOf((*MockURLRepository)(nil).GetAllByOwner), arg0, arg1)
 }
 
+// GetAppStatistic mocks base method.
+func (m *MockURLRepository) GetAppStatistic(arg0 context.Context) (dto.AppStatisticItem, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAppStatistic", arg0)
+	ret0, _ := ret[0].(dto.AppStatisticItem)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAppStatistic indicates an expected call of GetAppStatistic.
+func (mr *MockURLRepositoryMockRecorder) GetAppStatistic(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAppStatistic", reflect.TypeOf((*MockURLRepository)(nil).GetAppStatistic), arg0)
+}
+
 // GetByID mocks base method.
 func (m *MockURLRepository) GetByID(arg0 context.Context, arg1 string) (entity.ShortenedURLInfo, error) {
 	m.ctrl.T.Helper()

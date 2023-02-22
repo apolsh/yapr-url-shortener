@@ -9,30 +9,35 @@ import (
 	"github.com/apolsh/yapr-url-shortener/internal/app/repository/entity"
 )
 
+// URLShortenerService сервис для работы с URL.
 type URLShortenerService interface {
 	//AddNewURL сохраняет URL в хранилище
 	AddNewURL(ctx context.Context, shortenedURLInfo entity.ShortenedURLInfo) (string, error)
 
-	// AddNewURLsInBatch сохраняет массив URL в хранилище
+	// AddNewURLsInBatch сохраняет массив URL в хранилище.
 	AddNewURLsInBatch(ctx context.Context, owner string, batch []dto.ShortenInBatchRequestItem) ([]dto.ShortenInBatchResponseItem, error)
 
-	// GetURLByID возвращает оригинальный URL найденный по идентификатору
+	// GetURLByID возвращает оригинальный URL найденный по идентификатору.
 	GetURLByID(ctx context.Context, id string) (string, error)
 
-	// GetByOriginalURL возвращает entity.ShortenedURLInfo найденный по оригинальному URL
+	// GetByOriginalURL возвращает entity.ShortenedURLInfo найденный по оригинальному URL.
 	GetByOriginalURL(ctx context.Context, url string) (entity.ShortenedURLInfo, error)
 
-	// GetURLsByOwnerID  возвращает массив пар (укороченная + оригинальная ссылка) найденные по владельцу URL
+	// GetURLsByOwnerID  возвращает массив пар (укороченная + оригинальная ссылка) найденные по владельцу URL.
 	GetURLsByOwnerID(ctx context.Context, ownerID string) ([]dto.URLPair, error)
 
-	// PingDB проверяет работоспособность хранилища на основе которого работает URLShortenerService
+	// PingDB проверяет работоспособность хранилища на основе которого работает URLShortenerService.
 	PingDB(ctx context.Context) bool
 
-	// DeleteURLsInBatch помечает как удаленные URL, переданные в списке и принадлежащие указанному пользователю
+	// DeleteURLsInBatch помечает как удаленные URL, переданные в списке и принадлежащие указанному пользователю.
 	DeleteURLsInBatch(ctx context.Context, owner string, ids []string) error
 
-	//GetShortenURLFromID создает укороченный URL основываясь на идентификаторе сохраненного URL
+	//GetShortenURLFromID создает укороченный URL основываясь на идентификаторе сохраненного URL.
 	GetShortenURLFromID(ctx context.Context, id string) string
+
+	// GetAppStatistic получить статистику приложения.
+	GetAppStatistic(ctx context.Context) (dto.AppStatisticItem, error)
 }
 
+// ErrorItemIsDeleted элемент помечен как удаленный.
 var ErrorItemIsDeleted = errors.New("item is marked as deleted")
