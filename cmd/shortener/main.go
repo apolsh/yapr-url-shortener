@@ -40,7 +40,7 @@ var tlsCert []byte
 //go:embed tls/key.pem
 var tlsKey []byte
 
-// Server базовый интерфейс для серверов различного типа
+// Server базовый интерфейс для серверов различного типа.
 type Server interface {
 	Start() error
 	StartTLS(config *tls.Config) error
