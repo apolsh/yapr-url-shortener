@@ -40,6 +40,15 @@ var tlsCert []byte
 //go:embed tls/key.pem
 var tlsKey []byte
 
+type Server interface {
+	Start() error
+	StartTLS(config *tls.Config) error
+	Stop(ctx context.Context) error
+}
+
+var _ Server = (*grpc.GRPCServer)(nil)
+var _ Server = (*httpRouter.HTTPServer)(nil)
+
 // buildVersion - версия сборки
 // buildDate - дата сборки
 // buildCommit - комментарий сборки.
@@ -75,59 +84,77 @@ func main() {
 
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGQUIT)
 
-	httpServer := &http.Server{
+	httpServerConfigs := &http.Server{
 		Addr:         cfg.ServerAddress,
 		Handler:      router,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  15 * time.Second,
 	}
+	grpcServer := grpc.NewGRPCServer(cfg.GRPCServerAddress, urlShortenerService, authCryptoProvider, cfg.GetTrustedSubnet())
+	httpServer := httpRouter.NewHTTPServer(httpServerConfigs)
 
 	go func() {
 		<-quit
-		log.Info("httpServer is shutting down...")
+		log.Info("server is shutting down...")
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		httpServer.SetKeepAlivesEnabled(false)
-		if err := httpServer.Shutdown(ctx); err != nil {
-			log.Fatal(fmt.Errorf("could not gracefully shutdown the httpServer: %v", err))
+		err := grpcServer.Stop(ctx)
+		if err != nil {
+			log.Fatal(fmt.Errorf("could not gracefully shutdown the grpc server: %v", err))
+		}
+
+		if err := httpServer.Stop(ctx); err != nil {
+			log.Fatal(fmt.Errorf("could not gracefully shutdown the http server: %v", err))
 		}
 		urlShortenerStorage.Close()
 		close(done)
 	}()
 
-	log.Info("Server is ready to handle requests at " + cfg.ServerAddress)
+	if cfg.HTTPSEnabled {
+		tlsConfig, err := getTLSConfig()
+		if err != nil {
+			log.Fatal(fmt.Errorf("could not get TLS configs %v", err))
+		}
 
-	go func() {
-		startHTTPServer(cfg, httpServer)
-	}()
+		go func() {
+			err := grpcServer.StartTLS(tlsConfig)
+			if err != nil {
+				log.Fatal(fmt.Errorf("could not start grpc server: %v", err))
+			}
+		}()
 
-	_, starter := grpc.GetServerStarter(":8081", urlShortenerService, authCryptoProvider, cfg.GetTrustedSubnet())
+		err = httpServer.StartTLS(tlsConfig)
+		if err != nil {
+			log.Fatal(fmt.Errorf("could not start grpc server: %v", err))
+		}
 
-	go starter()
+	} else {
+		go func() {
+			err := grpcServer.Start()
+			if err != nil {
+				log.Fatal(fmt.Errorf("could not start grpc server: %v", err))
+			}
+		}()
+
+		err = httpServer.Start()
+		if err != nil {
+			log.Fatal(fmt.Errorf("could not start grpc server: %v", err))
+		}
+
+	}
 
 	<-done
 	log.Info("Server stopped")
 }
 
-func startHTTPServer(cfg config.Config, server *http.Server) {
-	if cfg.HTTPSEnabled {
-		cer, err := tls.X509KeyPair(tlsCert, tlsKey)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-
-		server.TLSConfig = &tls.Config{Certificates: []tls.Certificate{cer}}
-
-		if err := server.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
-			log.Fatal(fmt.Errorf("could not listen on %s: %v", cfg.ServerAddress, err))
-		}
-	} else {
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatal(fmt.Errorf("could not listen on %s: %v", cfg.ServerAddress, err))
-		}
+func getTLSConfig() (*tls.Config, error) {
+	cer, err := tls.X509KeyPair(tlsCert, tlsKey)
+	if err != nil {
+		return nil, err
 	}
+
+	return &tls.Config{Certificates: []tls.Certificate{cer}}, nil
 }

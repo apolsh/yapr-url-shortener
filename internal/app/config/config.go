@@ -26,6 +26,7 @@ type Config struct {
 	ConfigFilePath      string `env:"CONFIG"`
 	LogLevel            string `env:"LOG_LEVEL" envDefault:"info"`
 	TrustedSubnet       string `env:"TRUSTED_SUBNET"`
+	GRPCServerAddress   string `env:"GRPC_SERVER_ADDRESS" envDefault:"localhost:8081" json:"grpc_server_address"`
 	parsedTrustedSubnet *net.IPNet
 }
 
@@ -72,6 +73,9 @@ func (c *Config) populateEmptyFields(another Config) {
 	if c.TrustedSubnet == "" && another.TrustedSubnet != "" {
 		c.TrustedSubnet = another.TrustedSubnet
 	}
+	if c.GRPCServerAddress == "" && another.GRPCServerAddress != "" {
+		c.GRPCServerAddress = another.GRPCServerAddress
+	}
 }
 
 // Load считывает переменные окружения и флаги, приоритет отдается флагам
@@ -80,6 +84,7 @@ func Load() Config {
 	var mainConfig Config
 
 	flag.StringVar(&mainConfig.ServerAddress, "a", "", "HTTP server start address")
+	flag.StringVar(&mainConfig.GRPCServerAddress, "g", "", "GRPC server start address")
 	flag.StringVar(&mainConfig.BaseURL, "b", "", "base address of the resulting shortened URL")
 	flag.StringVar(&mainConfig.FileStoragePath, "f", "", "path to file with abbreviated URLs")
 	flag.StringVar(&mainConfig.DatabaseDSN, "d", "", "database DSN")

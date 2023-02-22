@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -17,6 +18,7 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -34,26 +36,68 @@ type urlShortenerServer struct {
 	trustedSubnet  *net.IPNet
 }
 
-// GetServerStarter возвращает grpc server и функцию, стартующую сервер
-func GetServerStarter(addr string, shortenService service.URLShortenerService, cryptoProvider crypto.CryptographicProvider, trustedSubnet *net.IPNet) (*grpc.Server, func()) {
-	listen, err := net.Listen("tcp", addr)
+// GRPCServer GRPC имплементация интерфейса Server.
+type GRPCServer struct {
+	addr           string
+	shortenService service.URLShortenerService
+	trustedSubnet  *net.IPNet
+	cryptoProvider crypto.CryptographicProvider
+	Server         *grpc.Server
+}
+
+// Start запускает сервер.
+func (s *GRPCServer) Start() error {
+	listen, err := net.Listen("tcp", s.addr)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	s := grpc.NewServer(grpc.UnaryInterceptor(newAuthInterceptor(cryptoProvider)))
+	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(newAuthInterceptor(s.cryptoProvider)))
 
-	pb.RegisterURLShortenerServer(s, &urlShortenerServer{shortenService: shortenService, trustedSubnet: trustedSubnet})
+	pb.RegisterURLShortenerServer(grpcServer, &urlShortenerServer{shortenService: s.shortenService, trustedSubnet: s.trustedSubnet})
 
-	return s, func() {
-		err = s.Serve(listen)
-		if err != nil {
-			log.Error(err)
-		}
+	return grpcServer.Serve(listen)
+}
+
+// StartTLS запускает сервер с TLS шифрованием.
+func (s *GRPCServer) StartTLS(cfg *tls.Config) error {
+	tlsCreds := credentials.NewTLS(cfg)
+
+	listen, err := net.Listen("tcp", s.addr)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(newAuthInterceptor(s.cryptoProvider)),
+		grpc.Creds(tlsCreds),
+	)
+
+	s.Server = grpcServer
+
+	pb.RegisterURLShortenerServer(grpcServer, &urlShortenerServer{shortenService: s.shortenService, trustedSubnet: s.trustedSubnet})
+
+	return grpcServer.Serve(listen)
+}
+
+// Stop останавливает сервер.
+func (s *GRPCServer) Stop(_ context.Context) error {
+	s.Server.GracefulStop()
+	return nil
+}
+
+// NewGRPCServer возвращает grpc сервер.
+func NewGRPCServer(addr string, shortenService service.URLShortenerService, cryptoProvider crypto.CryptographicProvider, trustedSubnet *net.IPNet) *GRPCServer {
+
+	return &GRPCServer{
+		addr:           addr,
+		shortenService: shortenService,
+		trustedSubnet:  trustedSubnet,
+		cryptoProvider: cryptoProvider,
 	}
 }
 
-// PingDB проверяет работу хранилища URL
+// PingDB проверяет работу хранилища URL.
 func (u *urlShortenerServer) PingDB(ctx context.Context, _ *emptypb.Empty) (*pb.PingDBResponse, error) {
 	ok := u.shortenService.PingDB(ctx)
 	response := &pb.PingDBResponse{IsAlive: ok}
@@ -61,7 +105,7 @@ func (u *urlShortenerServer) PingDB(ctx context.Context, _ *emptypb.Empty) (*pb.
 	return response, nil
 }
 
-// GetShortenURLByID производит редирект на сохраненный ранее в хранилище URL
+// GetShortenURLByID производит редирект на сохраненный ранее в хранилище URL.
 func (u *urlShortenerServer) GetShortenURLByID(ctx context.Context, request *pb.GetShortenURLByIDRequest) (*pb.GetShortenURLByIDResponse, error) {
 	url, err := u.shortenService.GetURLByID(ctx, request.UrlID)
 	if err != nil {
@@ -79,7 +123,7 @@ func (u *urlShortenerServer) GetShortenURLByID(ctx context.Context, request *pb.
 	return response, nil
 }
 
-// GetShortenURLsByUser возвращает список пар (короткий + длинный) URL пользователя
+// GetShortenURLsByUser возвращает список пар (короткий + длинный) URL пользователя.
 func (u *urlShortenerServer) GetShortenURLsByUser(ctx context.Context, _ *emptypb.Empty) (*pb.GetShortenURLsByUserResponse, error) {
 	owner := extractSingleValueFromContext(ctx, ownerID)
 
@@ -96,7 +140,7 @@ func (u *urlShortenerServer) GetShortenURLsByUser(ctx context.Context, _ *emptyp
 	return response, nil
 }
 
-// SaveShortenURL принимает запрос в виде простого текста, сохраняет URL в хранилище
+// SaveShortenURL принимает запрос в виде простого текста, сохраняет URL в хранилище.
 func (u *urlShortenerServer) SaveShortenURL(ctx context.Context, request *pb.SaveShortenURLRequest) (*pb.SaveShortenURLResponse, error) {
 	owner := extractSingleValueFromContext(ctx, ownerID)
 
@@ -118,7 +162,7 @@ func (u *urlShortenerServer) SaveShortenURL(ctx context.Context, request *pb.Sav
 	return response, nil
 }
 
-// GetAppStats получить статистику приложения
+// GetAppStats получить статистику приложения.
 func (u *urlShortenerServer) GetAppStats(ctx context.Context, _ *emptypb.Empty) (*pb.GetAppStatsResponse, error) {
 	stringIP := extractSingleValueFromContext(ctx, realIPHeader)
 
@@ -141,7 +185,7 @@ func (u *urlShortenerServer) GetAppStats(ctx context.Context, _ *emptypb.Empty) 
 	return response, nil
 }
 
-// SaveShortenURLsInBatch сохраняет сразу несколько URL в хранилище за один запрос
+// SaveShortenURLsInBatch сохраняет сразу несколько URL в хранилище за один запрос.
 func (u *urlShortenerServer) SaveShortenURLsInBatch(ctx context.Context, request *pb.SaveShortenURLsInBatchRequest) (*pb.SaveShortenURLsInBatchResponse, error) {
 	owner := extractSingleValueFromContext(ctx, ownerID)
 
@@ -167,7 +211,7 @@ func (u *urlShortenerServer) SaveShortenURLsInBatch(ctx context.Context, request
 	return response, nil
 }
 
-// DeleteShortenURLsInBatch помечает URL в хранилище как удаленный
+// DeleteShortenURLsInBatch помечает URL в хранилище как удаленный.
 func (u *urlShortenerServer) DeleteShortenURLsInBatch(ctx context.Context, request *pb.DeleteShortenURLsInBatchRequest) (*emptypb.Empty, error) {
 	owner := extractSingleValueFromContext(ctx, ownerID)
 
@@ -187,7 +231,6 @@ func extractSingleValueFromContext(ctx context.Context, key string) string {
 	if ok {
 		values := meta.Get(key)
 		if len(values) > 0 {
-			// ключ содержит слайс строк, получаем первую строку
 			value = values[0]
 		}
 	}

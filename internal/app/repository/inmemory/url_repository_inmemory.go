@@ -94,7 +94,7 @@ func NewURLRepositoryInMemory(m map[string]entity.ShortenedURLInfo, fileStorage 
 	return &URLRepositoryInMemory{Storage: storage, backupStorage: nil}, nil
 }
 
-// Save сохранить новый URL
+// Save сохранить новый URL.
 func (r *URLRepositoryInMemory) Save(ctx context.Context, shortenedInfo entity.ShortenedURLInfo) (string, error) {
 	_, err := r.GetByOriginalURL(ctx, shortenedInfo.GetOriginalURL())
 	if err != nil && errors.Is(err, repository.ErrorItemNotFound) {
@@ -133,7 +133,7 @@ func (r *URLRepositoryInMemory) update(_ context.Context, shortenedInfo entity.S
 	return shortenedInfo.GetID(), nil
 }
 
-// SaveBatch сохранить сразу несколько новых URL
+// SaveBatch сохранить сразу несколько новых URL.
 func (r *URLRepositoryInMemory) SaveBatch(ctx context.Context, owner string, batch []dto.ShortenInBatchRequestItem) (map[string]string, error) {
 	response := make(map[string]string, len(batch))
 	for _, item := range batch {
@@ -145,7 +145,7 @@ func (r *URLRepositoryInMemory) SaveBatch(ctx context.Context, owner string, bat
 	return response, nil
 }
 
-// DeleteURLsInBatch удалить несколько URL за 1 запрос
+// DeleteURLsInBatch удалить несколько URL за 1 запрос.
 func (r *URLRepositoryInMemory) DeleteURLsInBatch(ctx context.Context, owner string, ids []string) error {
 	for _, id := range ids {
 		urlEntity, isFound := r.Storage[id]
@@ -161,7 +161,7 @@ func (r *URLRepositoryInMemory) DeleteURLsInBatch(ctx context.Context, owner str
 	return nil
 }
 
-// GetByID получить URL по ID
+// GetByID получить URL по ID.
 func (r *URLRepositoryInMemory) GetByID(_ context.Context, id string) (entity.ShortenedURLInfo, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -172,7 +172,7 @@ func (r *URLRepositoryInMemory) GetByID(_ context.Context, id string) (entity.Sh
 	return s, nil
 }
 
-// GetByOriginalURL получить URL сущность по url
+// GetByOriginalURL получить URL сущность по url.
 func (r *URLRepositoryInMemory) GetByOriginalURL(_ context.Context, url string) (entity.ShortenedURLInfo, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -184,7 +184,7 @@ func (r *URLRepositoryInMemory) GetByOriginalURL(_ context.Context, url string) 
 	return entity.ShortenedURLInfo{}, repository.ErrorItemNotFound
 }
 
-// GetAllByOwner получить все URL по пользователю
+// GetAllByOwner получить все URL по пользователю.
 func (r *URLRepositoryInMemory) GetAllByOwner(_ context.Context, owner string) ([]entity.ShortenedURLInfo, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -197,17 +197,17 @@ func (r *URLRepositoryInMemory) GetAllByOwner(_ context.Context, owner string) (
 	return urls, nil
 }
 
-// Close не реализована, нужна для соответствия интерфейсу
+// Close не реализована, нужна для соответствия интерфейсу.
 func (r *URLRepositoryInMemory) Close() {
 
 }
 
-// Ping не реализована, нужна для соответствия интерфейсу
+// Ping не реализована, нужна для соответствия интерфейсу.
 func (r *URLRepositoryInMemory) Ping(_ context.Context) bool {
 	return true
 }
 
-// GetAppStatistic получить статистику приложения
+// GetAppStatistic получить статистику приложения.
 func (r *URLRepositoryInMemory) GetAppStatistic(_ context.Context) (dto.AppStatisticItem, error) {
 	uniqOwners := make(map[string]void, 0)
 	for _, urlInfo := range r.Storage {

@@ -41,13 +41,13 @@ const (
 	realIPHeader = "X-Real-IP"
 )
 
-// Controller представляет собой http контроллер, умеющий обрабатывать запросы
+// Controller представляет собой http контроллер, умеющий обрабатывать запросы.
 type Controller struct {
 	shortenService service.URLShortenerService
 	trustedSubnet  *net.IPNet
 }
 
-// NewRouter конструктор для Controller
+// NewRouter конструктор для Controller.
 func NewRouter(r *chi.Mux, serviceImpl service.URLShortenerService, provider crypto.CryptographicProvider, trustedSubnet *net.IPNet) {
 	c := &Controller{shortenService: serviceImpl, trustedSubnet: trustedSubnet}
 
@@ -77,7 +77,7 @@ func NewRouter(r *chi.Mux, serviceImpl service.URLShortenerService, provider cry
 
 }
 
-// PingDB проверяет работу хранилища URL
+// PingDB проверяет работу хранилища URL.
 func (c *Controller) PingDB(w http.ResponseWriter, r *http.Request) {
 	ok := c.shortenService.PingDB(r.Context())
 	if ok {
@@ -87,7 +87,7 @@ func (c *Controller) PingDB(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetShortenURLByID производит редирект на сохраненный ранее в хранилище URL
+// GetShortenURLByID производит редирект на сохраненный ранее в хранилище URL.
 func (c *Controller) GetShortenURLByID(w http.ResponseWriter, r *http.Request) {
 	if urlID := chi.URLParam(r, "urlID"); urlID != "" {
 		foundURL, err := c.shortenService.GetURLByID(r.Context(), urlID)
@@ -108,7 +108,7 @@ func (c *Controller) GetShortenURLByID(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Invalid parameter", http.StatusMethodNotAllowed)
 }
 
-// GetShortenURLsByUser возвращает список пар (короткий + длинный) URL пользователя
+// GetShortenURLsByUser возвращает список пар (короткий + длинный) URL пользователя.
 func (c *Controller) GetShortenURLsByUser(w http.ResponseWriter, r *http.Request) {
 	ownerID := r.Context().Value(customMiddleware.OwnerID).(string)
 	urlPairs, err := c.shortenService.GetURLsByOwnerID(r.Context(), ownerID)
@@ -130,7 +130,7 @@ func (c *Controller) GetShortenURLsByUser(w http.ResponseWriter, r *http.Request
 	}
 }
 
-// SaveShortenURL принимает запрос в виде простого текста, сохраняет URL в хранилище
+// SaveShortenURL принимает запрос в виде простого текста, сохраняет URL в хранилище.
 func (c *Controller) SaveShortenURL(w http.ResponseWriter, r *http.Request) {
 	if !isValidContentType(r, "text/plain", "text", "application/x-gzip") {
 		http.Error(w, invalidContentTypeError, http.StatusBadRequest)
@@ -175,7 +175,7 @@ func (c *Controller) SaveShortenURL(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// SaveShortenURLsInBatch сохраняет сразу несколько URL в хранилище за один запрос
+// SaveShortenURLsInBatch сохраняет сразу несколько URL в хранилище за один запрос.
 func (c *Controller) SaveShortenURLsInBatch(w http.ResponseWriter, r *http.Request) {
 	var body []dto.ShortenInBatchRequestItem
 
@@ -202,7 +202,7 @@ func (c *Controller) SaveShortenURLsInBatch(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-// SaveShortenURLJSON принимает запрос в виде JSON, сохраняет URL в хранилище
+// SaveShortenURLJSON принимает запрос в виде JSON, сохраняет URL в хранилище.
 func (c *Controller) SaveShortenURLJSON(w http.ResponseWriter, r *http.Request) {
 	var body saveURLBody
 	err := extractJSONBody(r, &body)
@@ -242,7 +242,7 @@ func (c *Controller) SaveShortenURLJSON(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-// DeleteShortenURLsInBatch помечает URL в хранилище как удаленный
+// DeleteShortenURLsInBatch помечает URL в хранилище как удаленный.
 func (c *Controller) DeleteShortenURLsInBatch(w http.ResponseWriter, r *http.Request) {
 	var ids []string
 	err := extractJSONBody(r, &ids)
@@ -263,7 +263,7 @@ func (c *Controller) DeleteShortenURLsInBatch(w http.ResponseWriter, r *http.Req
 	w.WriteHeader(http.StatusAccepted)
 }
 
-// GetAppStats получить статистику приложения
+// GetAppStats получить статистику приложения/
 func (c *Controller) GetAppStats(w http.ResponseWriter, r *http.Request) {
 	stringIP := r.Header.Get(realIPHeader)
 
