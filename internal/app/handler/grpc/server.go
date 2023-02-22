@@ -54,6 +54,8 @@ func (s *GRPCServer) Start() error {
 
 	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(newAuthInterceptor(s.cryptoProvider)))
 
+	s.Server = grpcServer
+
 	pb.RegisterURLShortenerServer(grpcServer, &urlShortenerServer{shortenService: s.shortenService, trustedSubnet: s.trustedSubnet})
 
 	return grpcServer.Serve(listen)
